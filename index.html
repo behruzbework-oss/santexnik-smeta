@@ -519,7 +519,7 @@ const fname=f=>{const P=cur();return P&&P.basement?(f===0?"Yerto'la (−1)":`${f
 function render(){const P=cur();if(V.page!=="home"&&!P)V.page="home";if(P)recalc();save();
   const back=V.page!=="home";$("hBack").style.visibility=back?"visible":"hidden";if(tg&&tg.BackButton){back?tg.BackButton.show():tg.BackButton.hide();}
   $("hSet").style.visibility=V.page==="home"?"visible":"hidden";park3d();
-  ({home:pgHome,wiz:pgWiz,room:pgRoom,set:pgSet})[V.page]();if(!V.keepScroll)window.scrollTo(0,0);V.keepScroll=false;}
+  ({home:pgHome,wiz:pgWiz,room:pgRoom,set:pgSet})[V.page]();const sk=[V.page,V.pid,V.step,V.tab,V.rid].join('|');if(!V.keepScroll&&sk!==V._sk)window.scrollTo(0,0);V._sk=sk;V.keepScroll=false;}
 
 /* ---------- BOSH SAHIFA ---------- */
 function pgHome(){setHeader("Santexnik Smeta","Isitish · suv · kanalizatsiya");prog(0);
@@ -591,7 +591,7 @@ function svgColl(C){const x=C.room,P=x.P,xs=P.map(p=>p[0]),ys=P.map(p=>p[1]),mnx
   const m=T(sub(C.wallPt,x.pos)),hw=Math.max(14,C.n*0.88*sc/2);
   const vert=Math.abs(C.dir[1])>Math.abs(C.dir[0]),rw=vert?24:2*hw,rh=vert?2*hw:24;g+=`<rect x="${m[0]-rw/2}" y="${m[1]-rh/2}" width="${rw}" height="${rh}" rx="6" fill="#1565d8"/><text x="${m[0]}" y="${m[1]+5}" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">KOLL</text>`;
   return `<svg id="svgc${C.f}_${C.ci}" viewBox="0 0 ${W} ${Hh.toFixed(0)}" width="100%">${g}</svg>
-  <div class="row" style="margin-top:6px;align-items:center;gap:8px"><span style="font-size:13px;white-space:nowrap">Devor bo'ylab:</span><input type="range" min="0" max="${C.Lw.toFixed(2)}" step="0.05" value="${C.t.toFixed(2)}" style="flex:1" oninput="App.coll(${C.f},${C.ci},'t',+this.value)"><b style="font-size:13px">${C.t.toFixed(2)} m</b></div>
+  <div class="row" style="margin-top:6px;align-items:center;gap:8px"><span style="font-size:13px;white-space:nowrap">Devor bo'ylab:</span><input type="range" min="0" max="${C.Lw.toFixed(2)}" step="0.05" value="${C.t.toFixed(2)}" style="flex:1" oninput="this.nextElementSibling.textContent=(+this.value).toFixed(2)+' m'" onchange="App.coll(${C.f},${C.ci},'t',+this.value)"><b style="font-size:13px">${C.t.toFixed(2)} m</b></div>
   <div style="font-size:12px;color:#667">Devorni bosing — kollektor shu nuqtaga qo'yiladi. Shkaf 80×80 sm, devorga 10 sm kiradi. Quvurlar avtomatik qayta yo'naltiriladi.</div>`;}
 
 /* ---------- NATIJA ---------- */
@@ -676,14 +676,14 @@ App.pool=(k,v)=>{cur().pool[k]=v;render();};App.irr=(k,v)=>{cur().irrig[k]=v;ren
 App.tpre=k=>{const s=cur().set;s.tpre=k;s.tsF=TPRE[k][0];s.trF=TPRE[k][1];render();};
 App.rpre=k=>{const s=cur().set;s.rpre=k;s.tsR=RPRE[k][0];s.trR=RPRE[k][1];render();};
 App.collArr=f=>{const c=cur().coll;let a=c[f];if(!Array.isArray(a))a=c[f]=[a||{}];return a;};
-App.coll=(f,i,k,v)=>{const A=App.collArr(f),c=A[i]=A[i]||{},C=H.cl.find(q=>q.f===f&&q.ci===i);if(k==="room"){c.room=v;c.wall=null;c.t=null;}else if(k==="t"){c.room=C.room.r.id;c.wall=C.wall;c.t=v;}else{c.room=C.room.r.id;c.wall=v;c.t=null;}save();render();};
-App.collAt=(f,i,w,e)=>{const S=SVGT[f+'_'+i],el=document.getElementById("svgc"+f+"_"+i);if(!S||!el)return App.coll(f,i,'wall',w);const R=el.getBoundingClientRect(),k=S.W/R.width,sx=(e.clientX-R.left)*k,sy=(e.clientY-R.top)*k;
+App.coll=(f,i,k,v)=>{V.keepScroll=true;const A=App.collArr(f),c=A[i]=A[i]||{},C=H.cl.find(q=>q.f===f&&q.ci===i);if(k==="room"){c.room=v;c.wall=null;c.t=null;}else if(k==="t"){c.room=C.room.r.id;c.wall=C.wall;c.t=v;}else{c.room=C.room.r.id;c.wall=v;c.t=null;}save();render();};
+App.collAt=(f,i,w,e)=>{V.keepScroll=true;const S=SVGT[f+'_'+i],el=document.getElementById("svgc"+f+"_"+i);if(!S||!el)return App.coll(f,i,'wall',w);const R=el.getBoundingClientRect(),k=S.W/R.width,sx=(e.clientX-R.left)*k,sy=(e.clientY-R.top)*k;
   const pt=[(sx-S.pad)/S.sc+S.mnx,(S.Hh-S.pad-sy)/S.sc+S.mny],p=S.P[w],q=S.P[(w+1)%4],d=sub(q,p),L=Math.hypot(...d),t=((pt[0]-p[0])*d[0]+(pt[1]-p[1])*d[1])/L;
   const A=App.collArr(f),c=A[i]=A[i]||{},C=H.cl.find(q=>q.f===f&&q.ci===i);c.room=C.room.r.id;c.wall=w;c.t=Math.max(0,Math.min(L,t));save();render();};
-App.collAdd=f=>{const A=App.collArr(f);/* mavjud biriktirishlarni aniq ro'yxatga aylantiramiz, yangi kollektor bo'sh boshlanadi */
+App.collAdd=f=>{V.keepScroll=true;const A=App.collArr(f);/* mavjud biriktirishlarni aniq ro'yxatga aylantiramiz, yangi kollektor bo'sh boshlanadi */
   H.cl.filter(C=>C.f===f).forEach(C=>{A[C.ci]=A[C.ci]||{};A[C.ci].rooms=H.ok.filter(x=>x.coll===C).map(x=>x.r.id);});A.push({rooms:[]});save();render();};
-App.collDel=(f,i)=>{const A=App.collArr(f);const gone=(A[i]&&A[i].rooms)||[];A.splice(i,1);if(A.length){A[0].rooms=A[0].rooms?A[0].rooms.concat(gone):null;}if(A.length===1)A[0].rooms=null;save();render();};
-App.collRoom=(f,i,id)=>{const A=App.collArr(f);H.cl.filter(C=>C.f===f).forEach(C=>{A[C.ci]=A[C.ci]||{};if(!A[C.ci].rooms)A[C.ci].rooms=H.ok.filter(x=>x.coll===C).map(x=>x.r.id);});
+App.collDel=(f,i)=>{V.keepScroll=true;const A=App.collArr(f);const gone=(A[i]&&A[i].rooms)||[];A.splice(i,1);if(A.length){A[0].rooms=A[0].rooms?A[0].rooms.concat(gone):null;}if(A.length===1)A[0].rooms=null;save();render();};
+App.collRoom=(f,i,id)=>{V.keepScroll=true;const A=App.collArr(f);H.cl.filter(C=>C.f===f).forEach(C=>{A[C.ci]=A[C.ci]||{};if(!A[C.ci].rooms)A[C.ci].rooms=H.ok.filter(x=>x.coll===C).map(x=>x.r.id);});
   A.forEach((c,j)=>{c.rooms=(c.rooms||[]).filter(r=>r!==id);if(j===i)c.rooms.push(id);});save();render();};
 App.tpl=()=>{fillTemplate(cur());V.fl=0;render();};
 App.fl=f=>{V.fl=f;render();};
