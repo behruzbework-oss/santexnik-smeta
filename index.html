@@ -1044,7 +1044,8 @@ scene.add(new THREE.HemisphereLight(0xffffff,0x8a96a3,1.15));const dl=new THREE.
 const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.maxPolarAngle=Math.PI*0.49;controls.minDistance=0.6;
 let group=null,flows=[],running=false,fitKey="";const clock=new THREE.Clock();
 const mat=(c,o={})=>new THREE.MeshLambertMaterial(Object.assign({color:c},o));
-const Y_EPS=0.05,Y_PIPE=0.06,PR=0.011;
+const Y_EPS=0.05,Y_PIPE=0.06,PR=0.008;/* PEX 16×2 — tashqi diametri 16 mm */
+const PIPE_R={ppr20:0.010,ppr25:0.0125,ppr32:0.016,ppr40:0.020};/* PPR quvurlarning haqiqiy tashqi radiusi */
 function tempColor(t,ts,tr){const k=Math.max(0,Math.min(1,(t-(tr-1))/(ts-(tr-1))));return new THREE.Color().setHSL((220-220*k)/360,0.8,0.48);}
 function size(){const w=el.clientWidth,h=el.clientHeight;if(!w)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
 function loop(){if(!running)return;requestAnimationFrame(loop);const dt=Math.min(0.05,clock.getDelta());controls.update();
@@ -1109,22 +1110,22 @@ function build(H,o){if(group){scene.remove(group);group.traverse(m=>{if(m.geomet
       [[0.18,0x9b1c1c],[-0.02,0x7a1414]].forEach(([y,c])=>{const b=new THREE.Mesh(new THREE.CylinderGeometry(0.016,0.016,CW-0.12,10),mat(c));b.rotation.z=Math.PI/2;b.position.set(cx,y,0);k.add(b);});}
     const p=C.wallPt,fc=faceOf(C.f,p,C.nv)-CD/2;k.position.set(p[0]+C.nv[0]*fc,z+0.55,-(p[1]+C.nv[1]*fc));k.rotation.y=Math.atan2(C.dir[1],C.dir[0]);group.add(k);
     if(!one||C.f===0){const a0=[p[0]-C.nv[0]*0.03,p[1]-C.nv[1]*0.03],M=mainPath(H,C.f,a0);[[-0.05,0x9b1c1c],[0.05,0x7a1414]].forEach(([off,col])=>{const a=[a0[0]+C.dir[0]*off,a0[1]+C.dir[1]*off];
-      const pts=M?mainPts(M,off,ff=>zOf(ff)+(ff===C.f?0.1:0.1),z+0.4,zOf(B.z/FH|0)+1.0,B.pt):[V3(a,z+0.4),V3(a,zOf(B.z/FH|0)+0.1),V3(B.pt,zOf(B.z/FH|0)+0.1),V3(B.pt,zOf(B.z/FH|0)+1.0)];if(M)pts[0]=V3(a,z+0.4),pts.splice(1,0,V3(a,z+0.1));const t=tubeOf(pts,0.016,mat(col));if(t)group.add(t);});}});
+      const pts=M?mainPts(M,off,ff=>zOf(ff)+(ff===C.f?0.1:0.1),z+0.4,zOf(B.z/FH|0)+1.0,B.pt):[V3(a,z+0.4),V3(a,zOf(B.z/FH|0)+0.1),V3(B.pt,zOf(B.z/FH|0)+0.1),V3(B.pt,zOf(B.z/FH|0)+1.0)];if(M)pts[0]=V3(a,z+0.4),pts.splice(1,0,V3(a,z+0.1));const t=tubeOf(pts,PIPE_R[(H.lines.find(l=>l.f===C.f)||{}).pipe]||0.016,mat(col));if(t)group.add(t);});}});
   /* suv kollektorlari va quvurlari */
   if(o.water)H.wcolls.forEach(W=>{if(one&&W.f!==o.floor)return;const z=zOf(W.f),ang=Math.atan2(W.dir[1],W.dir[0]),bz=zOf(B.z/FH|0);
     {const fc=faceOf(W.f,W.pos,W.n)-0.05;group.add(box(0.5,0.45,0.1,0xe6f0f7,W.pos[0]+W.n[0]*fc,z+0.55,-(W.pos[1]+W.n[1]*fc),ang));}
     const lines=[[-0.12,0x1f6fe0,"c"]].concat(W.oh?[[0.0,0xff6b6b,"h"]]:[]).concat(W.oh&&H.recirc?[[0.12,0xffa8a8,"r"]]:[]);
     const wa=[W.pos[0]-W.n[0]*0.03,W.pos[1]-W.n[1]*0.03],WM=mainPath(H,W.f,wa),bq=[B.pt[0]+0.4,B.pt[1]+0.4];
     lines.forEach(([off,col])=>{const a=[wa[0]+W.dir[0]*off,wa[1]+W.dir[1]*off],o2=off*0.4;
-      if(!one||W.f===0){let pts;if(WM){pts=mainPts(WM,o2+0.0,ff=>zOf(ff)+0.16,z+0.35,bz+0.9,bq);pts[0]=V3(a,z+0.35);pts.splice(1,0,V3(a,z+0.16));}else pts=[V3(a,z+0.35),V3(a,bz+0.13),V3(bq,bz+0.13),V3(bq,bz+0.9)];const t=tubeOf(pts,0.013,mat(col));if(t)group.add(t);}});
+      if(!one||W.f===0){let pts;if(WM){pts=mainPts(WM,o2+0.0,ff=>zOf(ff)+0.16,z+0.35,bz+0.9,bq);pts[0]=V3(a,z+0.35);pts.splice(1,0,V3(a,z+0.16));}else pts=[V3(a,z+0.35),V3(a,bz+0.13),V3(bq,bz+0.13),V3(bq,bz+0.9)];const t=tubeOf(pts,PIPE_R[H.mainPipe]||0.0125,mat(col));if(t)group.add(t);}});
     W.rooms.forEach(x=>{const A=x.P.map(p=>add(p,x.pos)),xs=A.map(p=>p[0]),ys=A.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),c=x.c,hot=Object.entries(x.r.fx||{}).some(([k,c])=>+c&&FX[k]&&FX[k][2]);
       const base=[W.pos[0]-W.n[0]*0.03,W.pos[1]-W.n[1]*0.03],cand=[[c[0],y0+0.03],[c[0],y1-0.03],[x0+0.03,c[1]],[x1-0.03,c[1]]],tgt=cand.sort((p,q)=>man(p,base)-man(q,base))[0];
       /* suv quvuri ham devor bo'yidagi yo'lak bo'ylab — issiq pol konturlarini kesmaydi; asbobga devordan ko'tariladi */
       const srcR=H.ok.find(y=>y.f===W.f&&(()=>{const A=y.P.map(q=>add(q,y.pos)),xs=A.map(q=>q[0]),ys=A.map(q=>q[1]);return base[0]>=Math.min(...xs)-0.2&&base[0]<=Math.max(...xs)+0.2&&base[1]>=Math.min(...ys)-0.2&&base[1]<=Math.max(...ys)+0.2;})()),
         BP=branchPath(H,W.f,base,tgt,srcR,x);
-      if(BP&&BP.length>1){(hot?[[-0.02,0x1f6fe0],[0.02,0xff6b6b]]:[[0,0x1f6fe0]]).forEach(([off,col])=>{const pts=[];BP.forEach(sg=>{const y=z+(sg.f-W.f)*FH+(sg.f===W.f?0.09:0.11);offL(sg.p,off).forEach(q=>pts.push(V3(q,y)));});pts.unshift(V3(offL(BP[0].p,off)[0],z+0.35));pts.push(V3(pts[pts.length-1].toArray?[pts[pts.length-1].x,-pts[pts.length-1].z]:[0,0],z+0.6));const t=tubeOf(pts,0.007,mat(col));if(t)group.add(t);});return;}
+      if(BP&&BP.length>1){(hot?[[-0.02,0x1f6fe0],[0.02,0xff6b6b]]:[[0,0x1f6fe0]]).forEach(([off,col])=>{const pts=[];BP.forEach(sg=>{const y=z+(sg.f-W.f)*FH+(sg.f===W.f?0.09:0.11);offL(sg.p,off).forEach(q=>pts.push(V3(q,y)));});pts.unshift(V3(offL(BP[0].p,off)[0],z+0.35));pts.push(V3(pts[pts.length-1].toArray?[pts[pts.length-1].x,-pts[pts.length-1].z]:[0,0],z+0.6));const t=tubeOf(pts,PIPE_R.ppr20,mat(col));if(t)group.add(t);});return;}
       const path=BP?BP[0].p:[base,[tgt[0],base[1]],tgt];
-      (hot?[[-0.02,0x1f6fe0],[0.02,0xff6b6b]]:[[0,0x1f6fe0]]).forEach(([off,col])=>{const pts=offL(path,off);const t=tubeOf([V3(pts[0],z+0.35)].concat(pts.map(p=>V3(p,z+0.09)),[V3(pts[pts.length-1],z+0.6)]),0.007,mat(col));if(t)group.add(t);});});});
+      (hot?[[-0.02,0x1f6fe0],[0.02,0xff6b6b]]:[[0,0x1f6fe0]]).forEach(([off,col])=>{const pts=offL(path,off);const t=tubeOf([V3(pts[0],z+0.35)].concat(pts.map(p=>V3(p,z+0.09)),[V3(pts[pts.length-1],z+0.6)]),PIPE_R.ppr20,mat(col));if(t)group.add(t);});});});
   if(B.room&&(!one||B.room.f===o.floor)){const z=zOf(B.room.f),c=B.pt;group.add(box(0.45,0.75,0.35,0xeeeeee,c[0],z+1.3,-c[1]));group.add(box(0.55,1.4,0.55,0xdfe3e8,c[0]+0.7,z+0.35,-c[1]));}
   /* kanalizatsiya stoyaklari va chiqish */
   if(o.sew){H.wet.filter(x=>x.r.fx&&x.r.fx.unitaz&&show(x)).forEach(x=>{const A=x.P.map(p=>[p[0]+x.pos[0],p[1]+x.pos[1]]),p=[A[3][0]+0.15,A[3][1]-0.15],z=zOf(x.f);
