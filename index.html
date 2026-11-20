@@ -325,22 +325,25 @@ function calcHouse(P){const st=P.set,FH=num(st.floorH)||3.2,rs=P.rooms.map(r=>({
   const chainLoops=()=>{ok.forEach(x=>x.loops.forEach(z=>{if(z._base){z.L=z._base.L;z.Q=z._base.Q;Object.assign(z,hyd(z.L,z.Q,st));z._base=null;}z.chain=null;z._host=false;z.chained=null;}));
     const onW=(x,pt)=>{const A=x.P.map(p=>add(p,x.pos));for(let i=0;i<4;i++){const a=A[i],b=A[(i+1)%4],d=nrm(sub(b,a)),L=len(sub(b,a)),t=dot(sub(pt,a),d),off=Math.abs((pt[0]-a[0])*d[1]-(pt[1]-a[1])*d[0]);if(off<0.35&&t>0.05&&t<L-0.05)return true;}return false;};
     const lim=x=>x.lim||(st.kolSmart?100:60),wet=t=>["sanuzel","dush","vanna","kir"].includes(t);
-    ok.filter(x=>x.loops.length===1&&!x.loops[0].own&&x.loops[0].L<45).sort((a,b)=>(wet(b.r.type)?1:0)-(wet(a.r.type)?1:0)).forEach(xs=>{const zs=xs.loops[0];if(zs.chain||zs._host||zs._base)return;
+    ok.filter(x=>x.loops.length===1&&!x.loops[0].own&&x.loops[0].L<58).sort((a,b)=>(wet(b.r.type)?1:0)-(wet(a.r.type)?1:0)).forEach(xs=>{const zs=xs.loops[0];if(zs.chain||zs._host||zs._base)return;
       const ops=openingsOf(H,xs.f).filter(o=>onW(xs,o.c));let best=null;
       ok.forEach(xt=>{if(xt===xs||xt.f!==xs.f||xt.coll!==xs.coll||!xt.loops.length)return;const zt=xt.loops.filter(z=>!z.chain&&!z._base&&!z.own).sort((p,q)=>p.L-q.L)[0];if(!zt)return;if(!ops.some(o=>onW(xt,o.c)))return;
         const a=routeFloor(H,xs.f,zt.arrS,zs.arrS),b=routeFloor(H,xs.f,zt.arrR,zs.arrR);if(!a||!b)return;const conn=plen(a)+plen(b),Lc=zt.L+plen(zs.core)+conn+0.6;
-        if(Lc>lim(xt)+2)return;const sc=Math.abs(Lc-57.5)-(xt.r.type==="koridor"?5:0);if(!best||sc<best.sc)best={sc,xt,zt,a,b,Lc};});
+        if(Lc>lim(xt)+5)return;/* 5 m bonus: ikki kontur qo'shilib 65 m gacha bo'lsa — bitta kontur */const sc=Math.abs(Lc-60)-(xt.r.type==="koridor"?5:0);if(!best||sc<best.sc)best={sc,xt,zt,a,b,Lc};});
       if(!best)return;const {zt,a,b,Lc}=best,xt=best.xt;zt._base={L:zt.L,Q:zt.Q};zt.L=Lc;zt.Q=(zt.Q||0)+(zs.Q||0);Object.assign(zt,hyd(zt.L,zt.Q,st));zt.chained=zs;
       zs.chain=zt;zs._host=true;const c0=add(zs.core[0],xs.pos),c1=add(zs.core[zs.core.length-1],xs.pos);zs.trS=a.concat([c0]);zs.trR=[c1].concat(b.slice().reverse());
       const Y0=0.06,p3=[];a.forEach(p=>p3.push([p[0],p[1],0.075]));zs.core.forEach(p=>p3.push([p[0]+xs.pos[0],p[1]+xs.pos[1],Y0]));b.slice().reverse().forEach(p=>p3.push([p[0],p[1],0.075]));zs.p3=p3;});
     ok.forEach(x=>{x.pipe=x.loops.reduce((t,z)=>t+(z.chain?0:z.L),0);});};
+  /* 5 m bonus: xonadagi konturlar 65 m gacha bo'lsa soni kamaysa — kamroq, uzunroq kontur */
+  if(!st.kolSmart)ok.forEach(x=>{if(x.loops.length<2||x.lim)return;const n0=x.loops.length,sum=x.loops.reduce((t,z)=>t+z.L,0);if(Math.ceil(sum/63)>=n0)return;
+    const nm0=x.nMin;x.lim=65;x.kf=undefined;calcRoom(x,st,H);if(x.cross||x.loops.length>=n0||x.loops.some(z=>z.L>65.5)){x.lim=undefined;x.nMin=nm0;x.kf=undefined;calcRoom(x,st,H);}});
   chainLoops();
   /* kollektor chiqishlari soni berilgan bo'lsa: konturlar sonini shunga moslaymiz */
   H.cl.forEach(C=>{if(!C.outs)return;const mine=()=>ok.filter(x=>x.coll===C&&x.loops.length),cnt=()=>{chainLoops();return mine().reduce((a,x)=>a+x.loops.filter(z=>!z.chain).length,0);};const base=st.kolSmart?100:60;
     for(let it=0;it<40&&st.kolSmart&&cnt()>C.outs;it++){/* ko'p: konturlarni uzunroq qilib birlashtiramiz (100 m gacha) */const xs=mine().filter(x=>x.loops.length>1).sort((a,b)=>b.loops.length-a.loops.length);let done=false;
       for(const x of xs){const n0=x.loops.length,l0=x.lim||base;if(l0>=100)continue;const nm0=x.nMin;x.lim=Math.min(100,l0+10);x.nMin=1;x.kf=undefined;calcRoom(x,st,H);if(x.loops.length<n0&&!x.cross){done=true;break;}if(x.cross){x.lim=l0===base?undefined:l0;x.nMin=nm0;x.kf=undefined;calcRoom(x,st,H);}}if(!done)break;}
-    const c=cnt();C.used=c;if(c>C.outs)H.warns.push(`${fname(C.f)}, ${C.ci+1}-kollektor: ${C.outs} ta chiqish yetmaydi — ${c} ta kontur kerak (kontur ${st.kolSmart?100:60} m dan oshmasligi uchun). Kattaroq kollektor oling yoki xonalarni boshqa kollektorga o'tkazing`);
-    if(!st.kolSmart&&mine().some(x=>x.loops.some(z=>z.L>60.5)))H.warns.push(`${fname(C.f)}, ${C.ci+1}-kollektor: ba'zi konturlar 60 m dan uzun — aqlli (oqim nazoratli) kollektor kerak`);});
+    const c=cnt();C.used=c;if(c>C.outs)H.warns.push(`${fname(C.f)}, ${C.ci+1}-kollektor: ${C.outs} ta chiqish yetmaydi — ${c} ta kontur kerak (kontur ${st.kolSmart?100:65} m dan oshmasligi uchun). Kattaroq kollektor oling yoki xonalarni boshqa kollektorga o'tkazing`);
+    if(!st.kolSmart&&mine().some(x=>x.loops.some(z=>z.L>65.5)))H.warns.push(`${fname(C.f)}, ${C.ci+1}-kollektor: ba'zi konturlar 60 m dan uzun — aqlli (oqim nazoratli) kollektor kerak`);});
   chainLoops();
   ok.forEach(x=>{H.A+=x.r.type==="balkon"?0:x.A;H.Q+=x.Q;H.pipe+=x.pipe;H.sec+=x.sec;H.rads+=x.rads;if(x.loops.length){H.per+=x.per;H.Apol+=x.A;H.hasPol=true;x.loops.forEach(z=>{if(!z.chain)H.loops.push(z);});}if(x.sec)H.hasRad=true;});
   H.loops.forEach((z,i)=>z.no=i+1);
@@ -455,7 +458,10 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.cross=0;x.loops=[];x.pipe=0;x
   x.Q=((extA-win)*U.wall[st.wall]*dT+win*U.win[st.win]*dT+(r.top?A*U.roof[st.roof]*dT:0)+(r.ground?A*U.floor[st.floor]*(ti-5):0)+0.34*0.5*A*h*dT)*1.1;
   if(r.heat==="yoq"){x.cover=1;x.Q=0;return;}
   const usePol=r.heat!=="radiator",useRad=r.heat!=="pol",C=x.coll,toAbs=p=>add(p,x.pos);
-  if(usePol){let s=(num(r.step)||15)/100;const s0=s,ed=num(st.edge)/100,maxL=x.lim||(st.kolSmart?100:60),LS=0.03,R=Math.max(RMIN,num(st.bendR)/100),Y0=0.06;
+  /* sanuzelga tutash tambur/koridor: bitta konturda bo'lgani uchun qadami ham sanuzelnikidek (15 sm) */
+  const wetNb=r.type==="koridor"&&(()=>{const bb=y=>{const A=y.P.map(p=>add(p,y.pos)),xs=A.map(p=>p[0]),ys=A.map(p=>p[1]);return [Math.min(...xs)-0.35,Math.min(...ys)-0.35,Math.max(...xs)+0.35,Math.max(...ys)+0.35];},inB=(b,p)=>p[0]>=b[0]&&p[0]<=b[2]&&p[1]>=b[1]&&p[1]<=b[3],bx=bb(x);
+    return openingsOf(H,x.f).some(o=>inB(bx,o.c)&&H.ok.some(y=>y!==x&&y.f===x.f&&["sanuzel","vanna","dush"].includes(y.r.type)&&inB(bb(y),o.c)));})();
+  if(usePol){let s=Math.min(num(r.step)||15,wetNb?15:99)/100;const s0=s,ed=num(st.edge)/100,maxL=x.lim||(st.kolSmart?100:60),LS=0.03,R=Math.max(RMIN,num(st.bendR)/100),Y0=0.06;
     /* kirish devori: kollektor shu xonada bo'lsa — kollektor devori, aks holda kollektorga eng yaqin devor */
     const portAbs=(dt,ow)=>C?add(C.wallPt,add(mul(C.dir,ow?dt:0),mul(C.nv,0.03))):null;
     const own=C&&C.room===x;let OWN=own;
@@ -555,7 +561,7 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.cross=0;x.loops=[];x.pipe=0;x
     x.loops=zones;x.pipe=zones.reduce((t,z)=>t+z.L,0);x.Aheat=zones.reduce((t,z)=>t+z.A,0);
     const ts=num(st.tsF),tr=num(st.trF);
     if(tr<=ti||ts<=tr)x.warns.push(`Bu xona ${ti}°C — issiq pol suvi undan iliqroq bo'lishi kerak. "Yuqori" haroratni tanlang yoki radiator qo'shing`);
-    else{const dth=(ts-tr)/Math.log((ts-ti)/(tr-ti)),stp=Math.min(30,Math.max(10,Math.round((x.sUsed?x.sUsed*100:(num(r.step)||15))/5)*5)),kh=(KH[r.cover]||KH.laminat)[stp]||4.3;
+    else{const dth=(ts-tr)/Math.log((ts-ti)/(tr-ti)),stp=Math.min(30,Math.max(10,Math.round((x.sUsed?x.sUsed*100:Math.min(num(r.step)||15,wetNb?15:99))/5)*5)),kh=(KH[r.cover]||KH.laminat)[stp]||4.3;
       let q=kh*dth,tF=ti+Math.pow(q/8.92,1/1.1);if(tF>T.fmax){tF=T.fmax;q=8.92*Math.pow(T.fmax-ti,1.1);}x.q=q;x.tF=tF;x.Qf=q*x.Aheat;}
     x.loops.forEach(z=>{z.Q=(x.q||0)*z.A;Object.assign(z,hyd(z.L,z.Q,st));});}
   x.need=Math.max(0,x.Q-x.Qf);
