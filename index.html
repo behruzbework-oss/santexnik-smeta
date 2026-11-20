@@ -53,7 +53,7 @@ details summary{cursor:pointer;font-size:14px;color:var(--ac);margin-top:6px}
 </style>
 </head>
 <body>
-<header><div><h1>Santexnik Smeta</h1><small>Issiq pol · radiator · qozonxona</small></div><button class="sec sm" onclick="App.share()">Ulashish</button></header>
+<header><div><h1>Santexnik Smeta</h1><small>Issiq pol · radiator · qozonxona</small></div><span class="row"><button class="sm" onclick="App.toBot()">Botga yuborish</button><button class="sec sm" onclick="App.share()">Ulashish</button></span></header>
 
 <section class="page on" id="p-rooms">
   <div id="roomList"></div>
@@ -312,9 +312,11 @@ App.dup=id=>{const r=JSON.parse(JSON.stringify(R(id)));r.id=Math.random().toStri
 App.variant=k=>{S.variant=k;render();};
 App.price=(k,v)=>{S.price[k]=num(String(v).replace(/\s/g,""));render();};
 App.reset=()=>{if(!confirm("Hamma xonalar o'chadi va namuna loyiha qaytadi. Davom etasizmi?"))return;S=fill({rooms:demo()});renderSettings();render();};
-App.share=()=>{const H=App.H,sm=smeta(H,S.variant);let t=`🔧 Smeta (${VARS[S.variant]})\nMaydon: ${fmt(H.A,1)} m² · Yo'qotish: ${fmt(H.Q/1000,1)} kVt · Kotyol: ${H.kw} kVt\n`;
+App.text=()=>{const H=App.H,sm=smeta(H,S.variant);let t=`🔧 Smeta (${VARS[S.variant]})\nMaydon: ${fmt(H.A,1)} m² · Yo'qotish: ${fmt(H.Q/1000,1)} kVt · Kotyol: ${H.kw} kVt\n`;
   H.ok.forEach(x=>{t+=`\n▫️ ${x.r.name} ${fmt(x.A,1)} m²: `+(x.loops.length?`${x.loops.length} kontur (${x.loops.map(z=>fmt(z.L)).join("+")} m)`:"")+(x.sec?` radiator ${x.sec} seks.`:"");});
-  t+="\n";sm.L.forEach(x=>t+=`\n• ${x.name}: ${fmt(x.qty,x.qty%1?1:0)} ${x.unit} — ${fmt(x.sum)}`);t+=`\n\nJAMI: ${fmt(sm.total)} so'm`;
+  t+="\n";sm.L.forEach(x=>t+=`\n• ${x.name}: ${fmt(x.qty,x.qty%1?1:0)} ${x.unit} — ${fmt(x.sum)}`);t+=`\n\nJAMI: ${fmt(sm.total)} so'm`;return t;};
+App.toBot=()=>{const t=App.text();if(tg&&tg.sendData&&tg.initData&&!(tg.initDataUnsafe&&tg.initDataUnsafe.query_id)){tg.sendData(JSON.stringify({text:t.slice(0,3900)}));}else{alert("Botga yuborish uchun ilovani chatdagi pastki \"📐 Loyihani ochish\" tugmasi orqali oching. Hozircha \"Ulashish\" tugmasidan foydalaning.");}};
+App.share=()=>{const t=App.text();
   if(tg&&tg.openTelegramLink){tg.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent("https://t.me/Santexnik_Smeta_bot")+"&text="+encodeURIComponent(t));}
   else if(navigator.share)navigator.share({text:t});else{navigator.clipboard&&navigator.clipboard.writeText(t);alert("Smeta nusxalandi");}};
 document.querySelectorAll("nav a").forEach(a=>a.onclick=e=>{e.preventDefault();document.querySelectorAll("nav a").forEach(b=>b.classList.toggle("on",b===a));document.querySelectorAll(".page").forEach(p=>p.classList.toggle("on",p.id==="p-"+a.dataset.p));if(a.dataset.p==="3d"&&App.show3d)App.show3d();});
