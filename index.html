@@ -347,7 +347,10 @@ function calcHouse(P){const st=P.set,FH=num(st.floorH)||3.2,rs=P.rooms.map(r=>({
   /* kollektorlar va qozonxonaga liniyalar */
   H.cl.forEach(C=>{const L=H.loops.filter(z=>z.room.coll===C);C.loops=L;
     /* 3D: kollektordan chiqqan tranzit quvurlar bir-birining ustiga tushmasin — har birini ozgina suramiz */
-    const T=L.filter(z=>!z.own&&z.p3);T.forEach((z,k)=>{const d=(k-(T.length-1)/2)*0.022;z.p3=spreadP3(z.p3,d,[C.dir[0]*d*2.2,C.dir[1]*d*2.2]);});
+    /* har bir kontur kollektorda o'z chiqishiga: borish — yuqori taroq, qaytish — pastki taroq, hammasi ko'rinib turadi */const T=L.filter(z=>z.p3);const pitch=Math.min(0.05,((+C.n||1)*0.88-0.16)/Math.max(1,T.length)),tOf=q=>(q[0]-C.wallPt[0])*C.dir[0]+(q[1]-C.wallPt[1])*C.dir[1];
+    /* chiqishlar tartibi: quvur qaysi tomonga ketsa, o'sha tomonda — kollektor oldida bir-birini kesmasin */
+    const key=z=>{const P=z.p3,q=P.find(p=>Math.abs(p[2]-0.075)<0.003&&Math.hypot(p[0]-P[0][0],p[1]-P[0][1])>0.3)||P[Math.min(P.length-1,3)];return tOf(q);};
+    T.slice().sort((a,b)=>key(a)-key(b)).forEach((z,k)=>{const d=(k-(T.length-1)/2)*0.022,tk=(k-(T.length-1)/2)*pitch,P=z.p3,s0=tk-tOf(P[0]),s1=tk-tOf(P[P.length-1]);/* borish quvuri oldinda (yuqori taroqqa), qaytish orqada (pastki taroqqa) — ikkalasi ham ko'rinadi */z.p3=spreadP3(P,d,[C.dir[0]*s0+C.nv[0]*0.018,C.dir[1]*s0+C.nv[1]*0.018],[C.dir[0]*s1-C.nv[0]*0.012,C.dir[1]*s1-C.nv[1]*0.012]);z.port=tk;});
     C.n=Math.ceil(L.length/12);
     const mineR=ok.filter(x=>x.coll===C&&x.sec);C.radN=mineR.reduce((t,x)=>t+x.rads,0);
     const dist=man(C.wallPt,H.boiler.pt)+Math.abs(C.z-H.boiler.z)+2;
@@ -405,11 +408,11 @@ function calcHouse(P){const st=P.set,FH=num(st.floorH)||3.2,rs=P.rooms.map(r=>({
 /* eshik va teshiklar: [{f, c:[x,y], d:[dx,dy], wd, kind}] — quvur qo'shni xonaga faqat shulardan o'tadi */
 function openingsOf(H,f){H._op=H._op||{};if(H._op[f])return H._op[f];const L=[];H.ok.filter(x=>x.f===f).forEach(x=>{const A=x.P.map(p=>add(p,x.pos));(x.r.doors||[]).forEach(o=>{const w=o.w|0,a=A[w],b=A[(w+1)%4],d=nrm(sub(b,a)),Lw=len(sub(b,a)),t=Math.max(0,Math.min(Lw,+o.t||0));L.push({room:x,w,c:add(a,mul(d,t)),d,wd:o.kind==="hole"?0.25:(+o.wd||0.9),kind:o.kind||"door"});});});return H._op[f]=L;}
 /* kollektordan chiqqan tranzit quvurlarni yonma-yon siljitish: perpendikulyar (diagonal emas), ulanish joyida to'g'ri burchak */
-function spreadP3(P,d,sd){const typ=p=>p[2]>0.7?"r":Math.abs(p[2]-0.075)<1e-6?"t":"c",G=[];P.forEach(p=>{const t=typ(p);if(!G.length||G[G.length-1].t!==t)G.push({t,p:[]});G[G.length-1].p.push(p);});
-  let ti=0;const out=[];G.forEach(g=>{let q;if(g.t==="r")q=g.p.map(p=>[p[0]+sd[0],p[1]+sd[1],p[2]]);else if(g.t==="t"){const h=g.p[0][2],dd=ti===0?d+0.006:-(d-0.006),isS=ti===0;ti++;const P2=g.p.map(p=>[p[0],p[1]]);q=offL(P2,dd).map(p=>[p[0],p[1],h]);
+function spreadP3(P,d,sd,sdE){let ri=0;const typ=p=>p[2]>0.3?"r":Math.abs(p[2]-0.075)<1e-6?"t":"c",G=[];P.forEach(p=>{const t=typ(p);if(!G.length||G[G.length-1].t!==t)G.push({t,p:[]});G[G.length-1].p.push(p);});
+  let ti=0;const out=[];G.forEach(g=>{let q;if(g.t==="r"){const v=(ri++>0&&sdE)?sdE:sd;q=g.p.map(p=>[p[0]+v[0],p[1]+v[1],p[2]]);}else if(g.t==="t"){const h=g.p[0][2],dd=ti===0?d+0.006:-(d-0.006),isS=ti===0;ti++;const P2=g.p.map(p=>[p[0],p[1]]);/* kollektor tomondagi uchi chiqish bilan birga suriladi */if(isS&&sd)P2[0]=[P2[0][0]+sd[0],P2[0][1]+sd[1]];if(!isS&&(sdE||sd)){const v=sdE||sd;P2[P2.length-1]=[P2[P2.length-1][0]+v[0],P2[P2.length-1][1]+v[1]];}q=offL(P2,dd).map(p=>[p[0],p[1],h]);
       /* spiral bilan ulanish nuqtasi siljimaydi: oxirgi (S) yoki birinchi (R) bo'lak faqat devor bo'ylab siljiydi */
-      const n=P2.length;if(n>=3){const fixEnd=(iE,iN,iPrev)=>{const a=P2[iPrev],b=P2[iN],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nn=[-(b[1]-a[1])/l*dd,(b[0]-a[0])/l*dd];q[iN]=[P2[iN][0]+nn[0],P2[iN][1]+nn[1],h];q[iE]=[P2[iE][0],P2[iE][1],h];};
-        if(isS)fixEnd(n-1,n-2,n-3);else{/* teskari yo'nalish */const a=P2[2],b=P2[1],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nn=[-(b[1]-a[1])/l*dd,(b[0]-a[0])/l*dd];/* offL normal R yo'nalishida: a->b teskari, shuning uchun belgisi qarama-qarshi */q[1]=[P2[1][0]-nn[0],P2[1][1]-nn[1],h];q[0]=[P2[0][0],P2[0][1],h];}}}else q=g.p;
+      const n=P2.length;if(isS)q[0]=[P2[0][0],P2[0][1],h];else q[n-1]=[P2[n-1][0],P2[n-1][1],h];if(n>=3){const fixEnd=(iE,iN,iPrev)=>{const a=P2[iPrev],b=P2[iN],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nn=[-(b[1]-a[1])/l*dd,(b[0]-a[0])/l*dd];q[iN]=[P2[iN][0]+nn[0],P2[iN][1]+nn[1],h];q[iE]=[P2[iE][0],P2[iE][1],h];};
+        if(isS){fixEnd(n-1,n-2,n-3);/* kollektor tomondagi uch ham: chiqish ostida tik qoladi */const a=P2[1],b=P2[2],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nn=[-(b[1]-a[1])/l*dd,(b[0]-a[0])/l*dd];q[0]=[P2[0][0],P2[0][1],h];q[1]=[P2[1][0]+nn[0],P2[1][1]+nn[1],h];}else{{const m=n-1,a=P2[m-2],b=P2[m-1],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nn=[-(b[1]-a[1])/l*dd,(b[0]-a[0])/l*dd];q[m]=[P2[m][0],P2[m][1],h];q[m-1]=[P2[m-1][0]+nn[0],P2[m-1][1]+nn[1],h];}/* teskari yo'nalish */const a=P2[2],b=P2[1],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nn=[-(b[1]-a[1])/l*dd,(b[0]-a[0])/l*dd];/* offL normal R yo'nalishida: a->b teskari, shuning uchun belgisi qarama-qarshi */q[1]=[P2[1][0]-nn[0],P2[1][1]-nn[1],h];q[0]=[P2[0][0],P2[0][1],h];}}}else q=g.p;
     if(out.length&&q.length){const a=out[out.length-1],b=q[0];if(Math.abs(a[0]-b[0])>1e-4&&Math.abs(a[1]-b[1])>1e-4){const nx=q[1]||b,horiz=Math.abs(nx[1]-b[1])<Math.abs(nx[0]-b[0]);/* keyingi bo'lak gorizontal bo'lsa — avval vertikal */out.push(horiz?[a[0],b[1],g.t==="c"?b[2]:a[2]]:[b[0],a[1],g.t==="c"?b[2]:a[2]]);}}
     q.forEach(p=>out.push(p));});
   /* ulanishdagi orqaga qaytish (5 sm "dum") ni olib tashlash */
@@ -628,9 +631,9 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.cross=0;x.loops=[];x.pipe=0;x
     zones.forEach(z=>{z.A=Math.min(A/zones.length,plen(z.core)*z.s);z.room=x;
       const inRoom=z.core.map(toAbs);z.full=z.trS.concat(inRoom,z.trR);
       /* 3D yo'li: [x,y,balandlik] — kollektorda ko'tarilish, tranzit izolyatsiya ostida (2 sm), xonada 6 sm */
-      const p3=[];if(C){const pS=portAbs(z.dS,z.own);if(z.own){const o=inRoom[0];p3.push([pS[0],pS[1],0.78],[o[0],o[1],0.78],[o[0],o[1],Y0]);}else{p3.push([pS[0],pS[1],0.78],[pS[0],pS[1],0.075]);z.trS.slice(1,-1).forEach(p=>p3.push([p[0],p[1],0.075]));const o=inRoom[0];joinL(p3,o,0.075);p3.push([o[0],o[1],0.075]);}}
+      const p3=[];if(C){const pS=portAbs(z.dS,z.own);if(z.own){/* o'z xonasi: kollektordan devor ichida pastga, so'ng polga */const o=inRoom[0];p3.push([pS[0],pS[1],0.73],[pS[0],pS[1],0.075]);joinL(p3,o,0.075);p3.push([o[0],o[1],0.075]);}else{p3.push([pS[0],pS[1],0.73],[pS[0],pS[1],0.075]);z.trS.slice(1,-1).forEach(p=>p3.push([p[0],p[1],0.075]));const o=inRoom[0];joinL(p3,o,0.075);p3.push([o[0],o[1],0.075]);}}
       inRoom.forEach(p=>p3.push([p[0],p[1],Y0]));
-      if(C){const pR=portAbs(z.dR,z.own);if(z.own){const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.58],[pR[0],pR[1],0.58]);}else{const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.075]);const tr=z.trR.slice(1,-1);if(tr.length){/* teskari tomondan ham to'g'ri burchak */const q=[[tr[1]?tr[1][0]:tr[0][0],tr[1]?tr[1][1]:tr[0][1],0.075],[tr[0][0],tr[0][1],0.075]];joinL(q,o,0.075);if(q.length>2)p3.push(q[2]);}tr.forEach(p=>p3.push([p[0],p[1],0.075]));p3.push([pR[0],pR[1],0.075],[pR[0],pR[1],0.58]);}}
+      if(C){const pR=portAbs(z.dR,z.own);if(z.own){const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.075]);const q=[[pR[0]+(o[0]-pR[0])*0.0001,pR[1],0.075],[pR[0],pR[1],0.075]];const tmp=[[o[0],o[1],0.075]];joinL(tmp,pR,0.075);if(tmp.length>1)p3.push(tmp[1]);p3.push([pR[0],pR[1],0.075],[pR[0],pR[1],0.53]);}else{const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.075]);const tr=z.trR.slice(1,-1);if(tr.length){/* teskari tomondan ham to'g'ri burchak */const q=[[tr[1]?tr[1][0]:tr[0][0],tr[1]?tr[1][1]:tr[0][1],0.075],[tr[0][0],tr[0][1],0.075]];joinL(q,o,0.075);if(q.length>2)p3.push(q[2]);}tr.forEach(p=>p3.push([p[0],p[1],0.075]));p3.push([pR[0],pR[1],0.075],[pR[0],pR[1],0.53]);}}
       z.p3=p3;});
     x.loops=zones;x.pipe=zones.reduce((t,z)=>t+z.L,0);x.Aheat=zones.reduce((t,z)=>t+z.A,0);
     const ts=num(st.tsF),tr=num(st.trF);
@@ -1101,7 +1104,7 @@ function build(H,o){if(group){scene.remove(group);group.traverse(m=>{if(m.geomet
   const B=H.boiler;H.cl.forEach(C=>{if((one&&C.f!==o.floor)||!C.loops.length)return;const z=zOf(C.f),CW=0.8,CH=0.8,CD=0.1,k=new THREE.Group(),nis=C.n;
     /* kollektor shkafi: 80x80 sm, devorga 10 sm kirib turadi (old tomoni devor yuzasi bilan tekis) */
     for(let j=0;j<nis;j++){const cx=(j-(nis-1)/2)*(CW+0.08),cm=mat(0xb7bec6);
-      const bk=new THREE.Mesh(new THREE.BoxGeometry(CW,CH,0.01),mat(0x8d969f));bk.position.set(cx,0,-CD/2+0.005);k.add(bk);
+      const bk=new THREE.Mesh(new THREE.BoxGeometry(CW,CH,0.01),mat(0x8d969f));bk.position.set(cx,0,CD/2-0.005)/* orqa devor ichkarida (lokal +z = devor ichi) */;k.add(bk);
       [[cx-CW/2+0.01,0,0.02,CH],[cx+CW/2-0.01,0,0.02,CH],[cx,CH/2-0.01,CW,0.02],[cx,-CH/2+0.01,CW,0.02]].forEach(([x,y,w,h])=>{const f=new THREE.Mesh(new THREE.BoxGeometry(w,h,CD),cm);f.position.set(x,y,0);k.add(f);});
       [[0.18,0x9b1c1c],[-0.02,0x7a1414]].forEach(([y,c])=>{const b=new THREE.Mesh(new THREE.CylinderGeometry(0.016,0.016,CW-0.12,10),mat(c));b.rotation.z=Math.PI/2;b.position.set(cx,y,0);k.add(b);});}
     const p=C.wallPt,fc=faceOf(C.f,p,C.nv)-CD/2;k.position.set(p[0]+C.nv[0]*fc,z+0.55,-(p[1]+C.nv[1]*fc));k.rotation.y=Math.atan2(C.dir[1],C.dir[0]);group.add(k);
