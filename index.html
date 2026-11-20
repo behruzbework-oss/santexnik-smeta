@@ -394,12 +394,35 @@ function calcHouse(P){const st=P.set,FH=num(st.floorH)||3.2,rs=P.rooms.map(r=>({
 /* ---------- tranzit quvur yo'naltirgich: xonalar devori bo'yidagi yo'lak + devordan o'tish (A*) ---------- */
 /* eshik va teshiklar: [{f, c:[x,y], d:[dx,dy], wd, kind}] — quvur qo'shni xonaga faqat shulardan o'tadi */
 function openingsOf(H,f){H._op=H._op||{};if(H._op[f])return H._op[f];const L=[];H.ok.filter(x=>x.f===f).forEach(x=>{const A=x.P.map(p=>add(p,x.pos));(x.r.doors||[]).forEach(o=>{const w=o.w|0,a=A[w],b=A[(w+1)%4],d=nrm(sub(b,a)),Lw=len(sub(b,a)),t=Math.max(0,Math.min(Lw,+o.t||0));L.push({room:x,w,c:add(a,mul(d,t)),d,wd:o.kind==="hole"?0.25:(+o.wd||0.9),kind:o.kind||"door"});});});return H._op[f]=L;}
-function routeFloor(H,f,A,B,loose){H._rg=H._rg||{};const gk=f+(loose?"L":"S");let G=H._rg[gk];const res=0.05;
+/* parallel quvurlar: markaziy yo'ldan perpendikulyar siljitish (issiq va sovuq yonma-yon) */
+function offL(P,d){if(!d||P.length<2)return P.map(p=>p.slice());const N=[];for(let i=1;i<P.length;i++){const dx=P[i][0]-P[i-1][0],dy=P[i][1]-P[i-1][1],l=Math.hypot(dx,dy)||1;N.push([-dy/l,dx/l]);}
+  return P.map((p,i)=>{const a=N[Math.max(0,i-1)],b=N[Math.min(N.length-1,i)],k=1+a[0]*b[0]+a[1]*b[1];if(k<0.2)return [p[0]+a[0]*d,p[1]+a[1]*d];return [p[0]+(a[0]+b[0])*d/k,p[1]+(a[1]+b[1])*d/k];});}
+/* xona boshqa xonalardan ajralgan bo'lsa (masalan yerto'lada): yuqori qavat devorlari bo'ylab o'tib, burchakdagi stoyak bilan tushadi */
+function branchPath(H,f,a,t,srcRoom,dst){const p=routeFloor(H,f,a,t);if(p)return [{f,p}];const up=f+1;if(!H.ok.some(x=>x.f===up))return null;
+  const cr=x=>{const A=x.P.map(q=>add(q,x.pos)),c=x.c;return A.map(q=>[q[0]+Math.sign(c[0]-q[0])*0.03,q[1]+Math.sign(c[1]-q[1])*0.03]);};
+  const C1=(srcRoom?cr(srcRoom):[a]).sort((p,q)=>man(p,a)-man(q,a)),C2=cr(dst).sort((p,q)=>man(p,t)-man(q,t));
+  for(const c1 of C1)for(const c2 of C2){const p1=srcRoom?routeFloor(H,f,a,c1):[a,c1];if(!p1)continue;const p2=routeFloor(H,up,c1,c2);if(!p2)continue;const p3=routeFloor(H,f,c2,t);if(!p3)continue;return [{f,p:p1},{f:up,p:p2},{f,p:p3}];}
+  return null;}
+/* magistral: kollektordan qozonxonagacha — devor bo'ylab, devor ichidan emas; qavatlar orasida devor burchagida stoyak */
+const _mp={};function mainPath(H,f,a){const B=H.boiler,bf=B.room?B.room.f:0,key=f+":"+a.map(v=>v.toFixed(2));if(_mp.H!==H){for(const k in _mp)delete _mp[k];_mp.H=H;}if(_mp[key])return _mp[key];
+  let res=null;const bp=B.pt;
+  if(f===bf){const p=routeFloor(H,f,a,bp,false,true);if(p)res=[{f,p}];}
+  else{const cs=[];H.ok.filter(x=>x.f===bf).forEach(x=>{const A=x.P.map(p=>add(p,x.pos)),cx=x.c;A.forEach(c=>{const v=[Math.sign(cx[0]-c[0])*0.03,Math.sign(cx[1]-c[1])*0.03];cs.push([c[0]+v[0],c[1]+v[1]]);});});
+    cs.sort((p,q)=>man(p,a)-man(q,a));
+    const midOk=c=>{for(let g=Math.min(f,bf)+1;g<Math.max(f,bf);g++)if(!routeFloor(H,g,c,c))return false;return true;};
+    for(const c of cs.filter(midOk).slice(0,8)){const p1=routeFloor(H,f,a,c);if(!p1)continue;const p2=routeFloor(H,bf,c,bp,false,true);if(!p2)continue;res=[{f,p:p1},{f:bf,p:p2}];break;}}
+  return _mp[key]=res;}
+
+function routeFloor(H,f,A,B,loose,snapEnd){H._rg=H._rg||{};const gk=f+(loose?"L":"S");let G=H._rg[gk];const res=0.05;
   if(!G){const R=H.ok.filter(x=>x.f===f).map(x=>{const xs=x.P.map(p=>p[0]+x.pos[0]),ys=x.P.map(p=>p[1]+x.pos[1]);return [Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];});
     if(!R.length)return null;const x0=Math.min(...R.map(r=>r[0]))-0.2,y0=Math.min(...R.map(r=>r[1]))-0.2,nx=Math.ceil((Math.max(...R.map(r=>r[2]))+0.2-x0)/res),ny=Math.ceil((Math.max(...R.map(r=>r[3]))+0.2-y0)/res);
     const inR=(px,py)=>R.findIndex(r=>px>r[0]&&px<r[2]&&py>r[1]&&py<r[3]),cost=new Float32Array(nx*ny);
+    /* to'siqlar (zina/kladovka, basseyn): ostidan quvur o'tmaydi, faqat chetlari bo'ylab aylanib o'tadi */
+    const OB=[];H.ok.filter(x=>x.f===f).forEach(x=>{(x.r.obst||[]).forEach(ob=>{if(+ob.w>0&&+ob.h>0)OB.push([x.pos[0]+ +ob.x,x.pos[1]+ +ob.y,x.pos[0]+ +ob.x+ +ob.w,x.pos[1]+ +ob.y+ +ob.h]);});
+      if(x.r.type==="basseyn"&&H.P.pool&&H.P.pool.on&&H.P.pool.indoor!==false){const q=poolRect(x,H.P.pool.area);if(q)OB.push([q.pool[0]+x.pos[0],q.pool[1]+x.pos[1],q.pool[2]+x.pos[0],q.pool[3]+x.pos[1]]);}});
+    const obD=(px,py)=>{let m=1e9;OB.forEach(o=>{const dx=Math.max(o[0]-px,0,px-o[2]),dy=Math.max(o[1]-py,0,py-o[3]);const inside=px>o[0]&&px<o[2]&&py>o[1]&&py<o[3];m=Math.min(m,inside?-1:Math.hypot(dx,dy));});return m;};
     for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const px=x0+(i+0.5)*res,py=y0+(j+0.5)*res,k=inR(px,py);let c=0;
-      if(k>=0){const r=R[k],d=Math.min(px-r[0],r[2]-px,py-r[1],r[3]-py);c=d<0.065?1:0;}
+      if(k>=0){const r=R[k],d=Math.min(px-r[0],r[2]-px,py-r[1],r[3]-py),od=OB.length?obD(px,py):1e9;c=od<0?0:(d<0.065||od<0.065)?1:0;}
       else{const W=0.14;if((inR(px-W,py)>=0&&inR(px+W,py)>=0)||(inR(px,py-W)>=0&&inR(px,py+W)>=0)){
           const op=openingsOf(H,f).some(o=>{const v=[px-o.c[0],py-o.c[1]],al=v[0]*o.d[0]+v[1]*o.d[1],ac=Math.abs(v[0]*o.d[1]-v[1]*o.d[0]);return Math.abs(al)<=o.wd/2-0.02&&ac<0.3;});
           c=op?2:(loose?40:0);}}
@@ -407,7 +430,8 @@ function routeFloor(H,f,A,B,loose){H._rg=H._rg||{};const gk=f+(loose?"L":"S");le
     G=H._rg[gk]={x0,y0,nx,ny,cost};}
   const {x0,y0,nx,ny,cost}=G,cell=p=>[Math.floor((p[0]-x0)/res),Math.floor((p[1]-y0)/res)];
   const snap=p=>{let [i,j]=cell(p);if(i>=0&&j>=0&&i<nx&&j<ny&&cost[j*nx+i]>0)return j*nx+i;let b=-1,bd=1e9;for(let dj=-3;dj<=3;dj++)for(let di=-3;di<=3;di++){const ii=i+di,jj=j+dj;if(ii<0||jj<0||ii>=nx||jj>=ny||!cost[jj*nx+ii])continue;const d=di*di+dj*dj;if(d<bd){bd=d;b=jj*nx+ii;}}return b;};
-  const s0=snap(A),g0=snap(B);if(s0<0||g0<0)return null;
+  const snapFar=p=>{const [i,j]=cell(p);let b=-1,bd=1e9;for(let dj=-70;dj<=70;dj++)for(let di=-70;di<=70;di++){const ii=i+di,jj=j+dj;if(ii<0||jj<0||ii>=nx||jj>=ny||cost[jj*nx+ii]!==1)continue;const d=di*di+dj*dj;if(d<bd){bd=d;b=jj*nx+ii;}}return b;};
+  const s0=snap(A),g0=snapEnd?snapFar(B):snap(B);if(s0<0||g0<0)return null;
   const D=[[1,0],[-1,0],[0,1],[0,-1]],N=nx*ny*4,gs=new Float32Array(N).fill(1e9),from=new Int32Array(N).fill(-1),gi=g0%nx,gj=(g0/nx)|0;
   const heap=[],push=(k,p)=>{heap.push([p,k]);let i=heap.length-1;while(i>0){const q=(i-1)>>1;if(heap[q][0]<=heap[i][0])break;[heap[q],heap[i]]=[heap[i],heap[q]];i=q;}},
     pop=()=>{const t=heap[0],l=heap.pop();if(heap.length){heap[0]=l;let i=0;for(;;){const a=2*i+1,b=a+1;let m=i;if(a<heap.length&&heap[a][0]<heap[m][0])m=a;if(b<heap.length&&heap[b][0]<heap[m][0])m=b;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m;}}return t;};
@@ -416,7 +440,7 @@ function routeFloor(H,f,A,B,loose){H._rg=H._rg||{};const gk=f+(loose?"L":"S");le
     for(let e=0;e<4;e++){const ni=ci+D[e][0],nj=cj+D[e][1];if(ni<0||nj<0||ni>=nx||nj>=ny)continue;const nc=nj*nx+ni,w=cost[nc];if(!w)continue;
       const ng=g+w*res+(e!==d?0.4:0),ns=nc*4+e;if(ng<gs[ns]){gs[ns]=ng;from[ns]=st;push(ns,ng+(Math.abs(ni-gi)+Math.abs(nj-gj))*res);}}}
   if(end<0)return null;const cs=[];for(let st=end;st>=0;st=from[st])cs.push(st>>2);cs.reverse();
-  const pts=cs.map(c=>[x0+((c%nx)+0.5)*res,y0+(((c/nx)|0)+0.5)*res]);pts[0]=A.slice();pts.push(B.slice());
+  const pts=cs.map(c=>[x0+((c%nx)+0.5)*res,y0+(((c/nx)|0)+0.5)*res]);pts[0]=A.slice();if(!snapEnd)pts.push(B.slice());
   const out=[pts[0]];for(let i=1;i<pts.length-1;i++){const a=out[out.length-1],b=pts[i],c=pts[i+1];if(Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))>1e-9)out.push(b);}out.push(pts[pts.length-1]);
   /* to'g'ri burchakli qilish: diagonal qisqa bo'laklarni L ga aylantirish */
   const o2=[out[0]];for(let i=1;i<out.length;i++){const a=o2[o2.length-1],b=out[i];if(Math.abs(a[0]-b[0])>1e-6&&Math.abs(a[1]-b[1])>1e-6)o2.push([b[0],a[1]]);o2.push(b);}
@@ -945,6 +969,8 @@ function loop(){if(!running)return;requestAnimationFrame(loop);const dt=Math.min
   renderer.render(scene,camera);}
 function start(){if(!running){running=true;clock.getDelta();requestAnimationFrame(loop);}}
 const V3=(p,y)=>new THREE.Vector3(p[0],y,-p[1]);
+function mainPts(M,d,yOf,y0,yEnd,bp){/* M: [{f,p}] -> 3D nuqtalar, d: yonma-yon siljish */const out=[];M.forEach((s,k)=>{const P=offL(s.p,d),y=yOf(s.f);if(k===0)out.push(V3(P[0],y0));P.forEach(p=>out.push(V3(p,y)));});
+  const last=M[M.length-1],P=offL(last.p,d),e=P[P.length-1],y=yOf(last.f),t=[bp[0]+d,bp[1]];out.push(V3([t[0],e[1]],y),V3(t,y),V3(t,yEnd));return out;}
 function tubeOf(pts,r,m){const path=new THREE.CurvePath();for(let i=1;i<pts.length;i++)if(pts[i].distanceTo(pts[i-1])>1e-5)path.add(new THREE.LineCurve3(pts[i-1],pts[i]));if(!path.curves.length)return null;return new THREE.Mesh(new THREE.TubeGeometry(path,Math.max(8,path.curves.length*4),r,8,false),m);}
 function box(w,h,d,c,x,y,z,ry=0){const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));b.position.set(x,y,z);b.rotation.y=ry;return b;}
 const FXS={unitaz:[0.38,0.4,0.65,0xffffff],rakovina:[0.6,0.85,0.45,0xf4f4f4],vanna:[1.7,0.58,0.75,0xffffff],dush:[0.9,0.06,0.9,0xe8eef3],bide:[0.36,0.38,0.55,0xffffff],moyka:[0.8,0.9,0.6,0xcfd5da],posuda:[0.6,0.85,0.6,0xd8dde2],kir:[0.6,0.85,0.6,0xeaeef1],polotens:[0.5,0.8,0.05,0xb9c1c8],trap:[0.15,0.01,0.15,0x5a6068]};
@@ -991,19 +1017,23 @@ function build(H,o){if(group){scene.remove(group);group.traverse(m=>{if(m.geomet
       [[cx-CW/2+0.01,0,0.02,CH],[cx+CW/2-0.01,0,0.02,CH],[cx,CH/2-0.01,CW,0.02],[cx,-CH/2+0.01,CW,0.02]].forEach(([x,y,w,h])=>{const f=new THREE.Mesh(new THREE.BoxGeometry(w,h,CD),cm);f.position.set(x,y,0);k.add(f);});
       [[0.18,0x9b1c1c],[-0.02,0x7a1414]].forEach(([y,c])=>{const b=new THREE.Mesh(new THREE.CylinderGeometry(0.016,0.016,CW-0.12,10),mat(c));b.rotation.z=Math.PI/2;b.position.set(cx,y,0);k.add(b);});}
     const p=C.wallPt;k.position.set(p[0]-C.nv[0]*CD/2,z+0.7,-(p[1]-C.nv[1]*CD/2));k.rotation.y=Math.atan2(C.dir[1],C.dir[0]);group.add(k);
-    if(!one||C.f===0){[[-0.06,0x9b1c1c],[0.06,0x7a1414]].forEach(([off,col])=>{const a=[p[0]+C.dir[0]*off-C.nv[0]*0.03,p[1]+C.dir[1]*off-C.nv[1]*0.03],b=[B.pt[0]+off,B.pt[1]+off],yb=zOf(B.z/FH|0)+0.1;
-      const pts=[V3(a,z+0.4),V3(a,yb),V3([b[0],a[1]],yb),V3(b,yb),V3(b,zOf(B.z/FH|0)+1.0)];const t=tubeOf(pts,0.016,mat(col));if(t)group.add(t);});}});
+    if(!one||C.f===0){const a0=[p[0]-C.nv[0]*0.03,p[1]-C.nv[1]*0.03],M=mainPath(H,C.f,a0);[[-0.05,0x9b1c1c],[0.05,0x7a1414]].forEach(([off,col])=>{const a=[a0[0]+C.dir[0]*off,a0[1]+C.dir[1]*off];
+      const pts=M?mainPts(M,off,ff=>zOf(ff)+(ff===C.f?0.1:0.1),z+0.4,zOf(B.z/FH|0)+1.0,B.pt):[V3(a,z+0.4),V3(a,zOf(B.z/FH|0)+0.1),V3(B.pt,zOf(B.z/FH|0)+0.1),V3(B.pt,zOf(B.z/FH|0)+1.0)];if(M)pts[0]=V3(a,z+0.4),pts.splice(1,0,V3(a,z+0.1));const t=tubeOf(pts,0.016,mat(col));if(t)group.add(t);});}});
   /* suv kollektorlari va quvurlari */
   if(o.water)H.wcolls.forEach(W=>{if(one&&W.f!==o.floor)return;const z=zOf(W.f),ang=Math.atan2(W.dir[1],W.dir[0]),bz=zOf(B.z/FH|0);
     group.add(box(0.5,0.45,0.1,0xe6f0f7,W.pos[0]-W.n[0]*0.01,z+0.9,-(W.pos[1]-W.n[1]*0.01),ang));
     const lines=[[-0.12,0x1f6fe0,"c"]].concat(W.oh?[[0.0,0xff6b6b,"h"]]:[]).concat(W.oh&&H.recirc?[[0.12,0xffa8a8,"r"]]:[]);
-    lines.forEach(([off,col])=>{const a=[W.pos[0]+W.dir[0]*off-W.n[0]*0.03,W.pos[1]+W.dir[1]*off-W.n[1]*0.03],b=[B.pt[0]+0.4+off,B.pt[1]+0.4+off],yb=bz+0.13;
-      if(!one||W.f===0){const t=tubeOf([V3(a,z+0.75),V3(a,yb),V3([b[0],a[1]],yb),V3(b,yb),V3(b,bz+0.9)],0.013,mat(col));if(t)group.add(t);}});
+    const wa=[W.pos[0]-W.n[0]*0.03,W.pos[1]-W.n[1]*0.03],WM=mainPath(H,W.f,wa),bq=[B.pt[0]+0.4,B.pt[1]+0.4];
+    lines.forEach(([off,col])=>{const a=[wa[0]+W.dir[0]*off,wa[1]+W.dir[1]*off],o2=off*0.4;
+      if(!one||W.f===0){let pts;if(WM){pts=mainPts(WM,o2+0.0,ff=>zOf(ff)+0.16,z+0.75,bz+0.9,bq);pts[0]=V3(a,z+0.75);pts.splice(1,0,V3(a,z+0.16));}else pts=[V3(a,z+0.75),V3(a,bz+0.13),V3(bq,bz+0.13),V3(bq,bz+0.9)];const t=tubeOf(pts,0.013,mat(col));if(t)group.add(t);}});
     W.rooms.forEach(x=>{const A=x.P.map(p=>add(p,x.pos)),xs=A.map(p=>p[0]),ys=A.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),c=x.c,hot=Object.entries(x.r.fx||{}).some(([k,c])=>+c&&FX[k]&&FX[k][2]);
       const base=[W.pos[0]-W.n[0]*0.03,W.pos[1]-W.n[1]*0.03],cand=[[c[0],y0+0.03],[c[0],y1-0.03],[x0+0.03,c[1]],[x1-0.03,c[1]]],tgt=cand.sort((p,q)=>man(p,base)-man(q,base))[0];
       /* suv quvuri ham devor bo'yidagi yo'lak bo'ylab — issiq pol konturlarini kesmaydi; asbobga devordan ko'tariladi */
-      const path=routeFloor(H,W.f,base,tgt)||[base,[tgt[0],base[1]],tgt];
-      [[0,0x1f6fe0]].concat(hot?[[0.02,0xff6b6b]]:[]).forEach(([off,col])=>{const pts=path.map(p=>[p[0]+off,p[1]+off]);const t=tubeOf([V3(pts[0],z+0.75)].concat(pts.map(p=>V3(p,z+0.09)),[V3(pts[pts.length-1],z+0.6)]),0.007,mat(col));if(t)group.add(t);});});});
+      const srcR=H.ok.find(y=>y.f===W.f&&(()=>{const A=y.P.map(q=>add(q,y.pos)),xs=A.map(q=>q[0]),ys=A.map(q=>q[1]);return base[0]>=Math.min(...xs)-0.2&&base[0]<=Math.max(...xs)+0.2&&base[1]>=Math.min(...ys)-0.2&&base[1]<=Math.max(...ys)+0.2;})()),
+        BP=branchPath(H,W.f,base,tgt,srcR,x);
+      if(BP&&BP.length>1){(hot?[[-0.02,0x1f6fe0],[0.02,0xff6b6b]]:[[0,0x1f6fe0]]).forEach(([off,col])=>{const pts=[];BP.forEach(sg=>{const y=z+(sg.f-W.f)*FH+(sg.f===W.f?0.09:0.11);offL(sg.p,off).forEach(q=>pts.push(V3(q,y)));});pts.unshift(V3(offL(BP[0].p,off)[0],z+0.75));pts.push(V3(pts[pts.length-1].toArray?[pts[pts.length-1].x,-pts[pts.length-1].z]:[0,0],z+0.6));const t=tubeOf(pts,0.007,mat(col));if(t)group.add(t);});return;}
+      const path=BP?BP[0].p:[base,[tgt[0],base[1]],tgt];
+      (hot?[[-0.02,0x1f6fe0],[0.02,0xff6b6b]]:[[0,0x1f6fe0]]).forEach(([off,col])=>{const pts=offL(path,off);const t=tubeOf([V3(pts[0],z+0.75)].concat(pts.map(p=>V3(p,z+0.09)),[V3(pts[pts.length-1],z+0.6)]),0.007,mat(col));if(t)group.add(t);});});});
   if(B.room&&(!one||B.room.f===o.floor)){const z=zOf(B.room.f),c=B.pt;group.add(box(0.45,0.75,0.35,0xeeeeee,c[0],z+1.3,-c[1]));group.add(box(0.55,1.4,0.55,0xdfe3e8,c[0]+0.7,z+0.75,-c[1]));}
   /* kanalizatsiya stoyaklari va chiqish */
   if(o.sew){H.wet.filter(x=>x.r.fx&&x.r.fx.unitaz&&show(x)).forEach(x=>{const A=x.P.map(p=>[p[0]+x.pos[0],p[1]+x.pos[1]]),p=[A[3][0]+0.15,A[3][1]-0.15],z=zOf(x.f);
@@ -1018,7 +1048,7 @@ function build(H,o){if(group){scene.remove(group);group.traverse(m=>{if(m.geomet
     rc.setFromCamera(v,camera);rc.params.Line={threshold:0.05};const hit=rc.intersectObjects(group.children.filter(c=>c.isSprite&&c.userData.loop),false)[0];let no=hit?hit.object.userData.loop:null;
     if(!no){/* quvurga eng yaqin (ekranda 22 px gacha) */const px=e.clientX-r.left,py=e.clientY-r.top,t=new THREE.Vector3();let best=22;group.children.forEach(c=>{const P=c.userData&&c.userData.pts;if(!P)return;let a=null;for(const p of P){t.copy(p).project(camera);if(t.z>1){a=null;continue;}const b=[(t.x+1)/2*r.width,(1-t.y)/2*r.height];if(a){const dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy||1,k=Math.max(0,Math.min(1,((px-a[0])*dx+(py-a[1])*dy)/l2)),d=Math.hypot(px-a[0]-k*dx,py-a[1]-k*dy);if(d<best){best=d;no=c.userData.loop;}}a=b;}});}
     if(window.App&&App.selLoop&&(no||App.o3.sel))App.selLoop(no);});}
-window.R3D={build,size,stop(){running=false;}};
+window.R3D={build,size,stop(){running=false;},_cam:camera,_ctl:controls};
 new ResizeObserver(size).observe(el);["touchstart","touchmove"].forEach(ev=>el.addEventListener(ev,e=>{e.stopPropagation();if(ev==="touchmove")e.preventDefault();},{passive:false}));
 if(window.__pending3d){window.__pending3d=false;window.App.show3d();}
 </script>
