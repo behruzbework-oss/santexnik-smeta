@@ -332,7 +332,10 @@ function calcHouse(P){const st=P.set,FH=num(st.floorH)||3.2,rs=P.rooms.map(r=>({
   ok.forEach(x=>{H.A+=x.r.type==="balkon"?0:x.A;H.Q+=x.Q;H.pipe+=x.pipe;H.sec+=x.sec;H.rads+=x.rads;if(x.loops.length){H.per+=x.per;H.Apol+=x.A;H.hasPol=true;x.loops.forEach(z=>H.loops.push(z));}if(x.sec)H.hasRad=true;});
   H.loops.forEach((z,i)=>z.no=i+1);
   /* kollektorlar va qozonxonaga liniyalar */
-  H.cl.forEach(C=>{const L=H.loops.filter(z=>z.room.coll===C);C.loops=L;C.n=Math.ceil(L.length/12);
+  H.cl.forEach(C=>{const L=H.loops.filter(z=>z.room.coll===C);C.loops=L;
+    /* 3D: kollektordan chiqqan tranzit quvurlar bir-birining ustiga tushmasin — har birini ozgina suramiz */
+    const T=L.filter(z=>!z.own&&z.p3);T.forEach((z,k)=>{const d=(k-(T.length-1)/2)*0.022,sd=[C.dir[0]*d*2.2,C.dir[1]*d*2.2];z.p3=z.p3.map(p=>p[2]>0.7?[p[0]+sd[0],p[1]+sd[1],p[2]]:Math.abs(p[2]-0.075)<1e-6?[p[0]+d,p[1]+d,p[2]]:p);});
+    C.n=Math.ceil(L.length/12);
     const mineR=ok.filter(x=>x.coll===C&&x.sec);C.radN=mineR.reduce((t,x)=>t+x.rads,0);
     const dist=man(C.wallPt,H.boiler.pt)+Math.abs(C.z-H.boiler.z)+2;
     let left=L.length;for(let i=0;i<C.n;i++){const o=Math.ceil(left/(C.n-i)),grp=L.slice(L.length-left,L.length-left+o);left-=o;
@@ -508,9 +511,9 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.loops=[];x.pipe=0;x.sec=0;x.r
     zones.forEach(z=>{z.A=Math.min(A/zones.length,plen(z.core)*z.s);z.room=x;
       const inRoom=z.core.map(toAbs);z.full=z.trS.concat(inRoom,z.trR);
       /* 3D yo'li: [x,y,balandlik] — kollektorda ko'tarilish, tranzit izolyatsiya ostida (2 sm), xonada 6 sm */
-      const p3=[];if(C){const pS=portAbs(z.dS,z.own);if(z.own){const o=inRoom[0];p3.push([pS[0],pS[1],0.78],[o[0],o[1],0.78],[o[0],o[1],Y0]);}else{p3.push([pS[0],pS[1],0.78],[pS[0],pS[1],0.02]);z.trS.slice(1,-1).forEach(p=>p3.push([p[0],p[1],0.02]));const o=inRoom[0];p3.push([o[0],o[1],0.02]);}}
+      const p3=[];if(C){const pS=portAbs(z.dS,z.own);if(z.own){const o=inRoom[0];p3.push([pS[0],pS[1],0.78],[o[0],o[1],0.78],[o[0],o[1],Y0]);}else{p3.push([pS[0],pS[1],0.78],[pS[0],pS[1],0.075]);z.trS.slice(1,-1).forEach(p=>p3.push([p[0],p[1],0.075]));const o=inRoom[0];p3.push([o[0],o[1],0.075]);}}
       inRoom.forEach(p=>p3.push([p[0],p[1],Y0]));
-      if(C){const pR=portAbs(z.dR,z.own);if(z.own){const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.58],[pR[0],pR[1],0.58]);}else{const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.02]);z.trR.slice(1,-1).forEach(p=>p3.push([p[0],p[1],0.02]));p3.push([pR[0],pR[1],0.02],[pR[0],pR[1],0.58]);}}
+      if(C){const pR=portAbs(z.dR,z.own);if(z.own){const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.58],[pR[0],pR[1],0.58]);}else{const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.075]);z.trR.slice(1,-1).forEach(p=>p3.push([p[0],p[1],0.075]));p3.push([pR[0],pR[1],0.075],[pR[0],pR[1],0.58]);}}
       z.p3=p3;});
     x.loops=zones;x.pipe=zones.reduce((t,z)=>t+z.L,0);x.Aheat=zones.reduce((t,z)=>t+z.A,0);
     const ts=num(st.tsF),tr=num(st.trF);
