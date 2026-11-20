@@ -643,6 +643,10 @@ App.t3=k=>{App.o3[k]=!App.o3[k];render();};App.f3=f=>{App.o3.floor=f;render();};
 function show3d(){const slot=$("slot3d"),v=$("v3d");if(slot&&v&&v.parentNode!==slot)slot.appendChild(v);if(window.R3D){R3D.size();R3D.build(H,App.o3);}else window.__pending3d=true;}
 function park3d(){const v=$("v3d"),h=$("v3dHold");if(v&&h&&v.parentNode!==h){h.appendChild(v);if(window.R3D)R3D.stop();}}
 App.show3d=show3d;
+/* havola orqali obyekt import: #o=<base64 JSON> */
+try{const m=location.hash.match(/^#o=(.+)$/);if(m){const j=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));const P=newObj(j.t||"dacha");P.id=j.id||uid();P.name=j.n||P.name;P.floors=j.f||P.floors;if(j.pool)P.pool=Object.assign(P.pool,j.pool);if(j.sauna!=null)P.sauna=j.sauna;if(j.irrig)P.irrig=Object.assign(P.irrig,j.irrig);
+  P.rooms=(j.r||[]).map(([t,n,f,a,b,x])=>{const isLiv=["zal","yotoq","oshxona","basseyn"].includes(t);return mkRoom(t,[a,b,a,b],Object.assign({name:n,floor:f,ext:[true,false,false,false],win:isLiv?Math.round(a*b*0.12*10)/10:0,ground:f===0,top:f===P.floors-1},x||{}));});
+  if(!DB.projects.some(q=>q.id===P.id)){DB.projects.push(P);save();}V.pid=P.id;V.page="wiz";V.step=4;V.fl=0;try{history.replaceState(null,"",location.pathname);}catch(e){}}}catch(e){}
 render();
 </script>
 
