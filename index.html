@@ -334,9 +334,6 @@ function calcHouse(P){const st=P.set,FH=num(st.floorH)||3.2,rs=P.rooms.map(r=>({
       zs.chain=zt;zs._host=true;const c0=add(zs.core[0],xs.pos),c1=add(zs.core[zs.core.length-1],xs.pos);zs.trS=a.concat([c0]);zs.trR=[c1].concat(b.slice().reverse());
       const Y0=0.06,p3=[];a.forEach(p=>p3.push([p[0],p[1],0.075]));zs.core.forEach(p=>p3.push([p[0]+xs.pos[0],p[1]+xs.pos[1],Y0]));b.slice().reverse().forEach(p=>p3.push([p[0],p[1],0.075]));zs.p3=p3;});
     ok.forEach(x=>{x.pipe=x.loops.reduce((t,z)=>t+(z.chain?0:z.L),0);});};
-  /* 5 m bonus: xonadagi konturlar 65 m gacha bo'lsa soni kamaysa — kamroq, uzunroq kontur */
-  if(!st.kolSmart)ok.forEach(x=>{if(x.loops.length<2||x.lim)return;const n0=x.loops.length,sum=x.loops.reduce((t,z)=>t+z.L,0);if(Math.ceil(sum/63)>=n0)return;
-    const nm0=x.nMin;x.lim=65;x.kf=undefined;calcRoom(x,st,H);if(x.cross||x.loops.length>=n0||x.loops.some(z=>z.L>65.5)){x.lim=undefined;x.nMin=nm0;x.kf=undefined;calcRoom(x,st,H);}});
   chainLoops();
   /* kollektor chiqishlari soni berilgan bo'lsa: konturlar sonini shunga moslaymiz */
   H.cl.forEach(C=>{if(!C.outs)return;const mine=()=>ok.filter(x=>x.coll===C&&x.loops.length),cnt=()=>{chainLoops();return mine().reduce((a,x)=>a+x.loops.filter(z=>!z.chain).length,0);};const base=st.kolSmart?100:65;
@@ -357,6 +354,16 @@ function calcHouse(P){const st=P.set,FH=num(st.floorH)||3.2,rs=P.rooms.map(r=>({
     let left=L.length;for(let i=0;i<C.n;i++){const o=Math.ceil(left/(C.n-i)),grp=L.slice(L.length-left,L.length-left+o);left-=o;
       const lpm=grp.reduce((t,z)=>t+z.lpm,0),Q=grp.reduce((t,z)=>t+z.Q,0);H.lines.push({kind:"pol",f:C.f,no:H.lines.length+1,outs:o,loops:grp,lpm,Q,len:dist,pipe:lpm>25?"ppr40":"ppr32",dP:Math.max(...grp.map(z=>z.dP),0)});}
     if(C.radN){const Q=mineR.reduce((t,x)=>t+x.sec*(x.qs||0),0),lpm=Q/(4190*Math.max(1,num(st.tsR)-num(st.trR)))/0.98*60;H.lines.push({kind:"rad",f:C.f,no:H.lines.length+1,outs:C.radN,lpm,Q,len:dist,pipe:"ppr25",dP:5});}});
+  /* mantiqsiz bukilishlarni butun qavat bo'yicha tuzatish */
+  H.unrev=0;for(let f=0;f<P.floors;f++){const Ls=ok.filter(x=>x.f===f).flatMap(x=>x.loops.filter(z=>z.p3&&z.p3.length));if(Ls.length){Ls.forEach(z=>{z.p3=tidyP3(z.p3);});H.unrev+=unreverse(H,f,Ls.map(z=>z.p3));Ls.forEach(z=>{z.p3=tidyP3(z.p3);});}}
+  /* nazorat: kirish/chiqishda 180° ortga qaytish qolgan konturlar (eshikdan o'tishdagi qayrilish hisobga olinmaydi) */
+  {const inRoomOf=(f,p)=>ok.find(x=>{if(x.f!==f)return false;const A=x.P.map(q=>add(q,x.pos)),xs=A.map(q=>q[0]),ys=A.map(q=>q[1]);return p[0]>=Math.min(...xs)-1e-3&&p[0]<=Math.max(...xs)+1e-3&&p[1]>=Math.min(...ys)-1e-3&&p[1]<=Math.max(...ys)+1e-3;});
+   const leadU=(z)=>{const P=z.p3,f=z.room.f,cut=Q=>{let k=0;while(k<Q.length&&(Math.abs(Q[k][2]-0.075)<0.003||Q[k][2]>0.1))k++;let acc=0,j=k;while(j+1<Q.length&&acc<3.5){acc+=Math.hypot(Q[j+1][0]-Q[j][0],Q[j+1][1]-Q[j][1]);j++;}return Q.slice(0,j+1);};
+     const rs=Q=>{const o=[Q[0]];for(let i=1;i<Q.length;i++){const a=Q[i-1],b=Q[i],l=Math.hypot(b[0]-a[0],b[1]-a[1]);for(let t=0.05;t<=l;t+=0.05)o.push([a[0]+(b[0]-a[0])*t/l,a[1]+(b[1]-a[1])*t/l]);}return o;};
+     const has=S=>{const T=[];for(let i=1;i<S.length;i++){const dx=S[i][0]-S[i-1][0],dy=S[i][1]-S[i-1][1],l=Math.hypot(dx,dy)||1;T.push([dx/l,dy/l]);}
+       for(let i=5;i<T.length-5;i++)for(let j=i+2;j<Math.min(T.length-5,i+10);j++){if(T[i][0]*T[j][0]+T[i][1]*T[j][1]>-0.95)continue;let g=true;for(let k=1;k<=5&&g;k++)if(T[i-k][0]*T[i][0]+T[i-k][1]*T[i][1]<0.98||T[j+k][0]*T[j][0]+T[j+k][1]*T[j][1]<0.98)g=false;if(g&&inRoomOf(f,S[i])===inRoomOf(f,S[j]))return true;}return false;};
+     return P&&P.length>4&&(has(rs(cut(P)))||has(rs(cut(P.slice().reverse()))));};
+   H.uLoops=[];ok.forEach(x=>x.loops.forEach(z=>{if(leadU(z))H.uLoops.push(z);}));if(H.uLoops.length){const nos=[...new Set(H.uLoops.map(z=>z.chain?z.chain.no:z.no))].sort((a,b)=>a-b);H.warns.push(`Kontur ${nos.map(n=>'№'+n).join(', ')}: kirishda quvur ortga qayrilib qaytadi (to'g'ri yo'l topilmadi). Kollektorni shu xonalarga yaqinroq qo'ying yoki eshik/teshikni kollektor tomonga suring`);}}
   H.pprRad=ok.reduce((t,x)=>{const C=x.coll;return t+(x.rads&&C?x.rads*2*(man(x.c,C.floor)+1):0);},0);
   /* suv, issiq suv, kanalizatsiya */
   const G=guests(P);H.G=G;let fx={},N=0,qs=0,qh=0,qmax=0,hotRooms=[],wet=[];
@@ -399,7 +406,10 @@ function calcHouse(P){const st=P.set,FH=num(st.floorH)||3.2,rs=P.rooms.map(r=>({
 function openingsOf(H,f){H._op=H._op||{};if(H._op[f])return H._op[f];const L=[];H.ok.filter(x=>x.f===f).forEach(x=>{const A=x.P.map(p=>add(p,x.pos));(x.r.doors||[]).forEach(o=>{const w=o.w|0,a=A[w],b=A[(w+1)%4],d=nrm(sub(b,a)),Lw=len(sub(b,a)),t=Math.max(0,Math.min(Lw,+o.t||0));L.push({room:x,w,c:add(a,mul(d,t)),d,wd:o.kind==="hole"?0.25:(+o.wd||0.9),kind:o.kind||"door"});});});return H._op[f]=L;}
 /* kollektordan chiqqan tranzit quvurlarni yonma-yon siljitish: perpendikulyar (diagonal emas), ulanish joyida to'g'ri burchak */
 function spreadP3(P,d,sd){const typ=p=>p[2]>0.7?"r":Math.abs(p[2]-0.075)<1e-6?"t":"c",G=[];P.forEach(p=>{const t=typ(p);if(!G.length||G[G.length-1].t!==t)G.push({t,p:[]});G[G.length-1].p.push(p);});
-  let ti=0;const out=[];G.forEach(g=>{let q;if(g.t==="r")q=g.p.map(p=>[p[0]+sd[0],p[1]+sd[1],p[2]]);else if(g.t==="t"){const h=g.p[0][2],dd=ti===0?d+0.006:-(d-0.006);ti++;q=offL(g.p.map(p=>[p[0],p[1]]),dd).map(p=>[p[0],p[1],h]);}else q=g.p;
+  let ti=0;const out=[];G.forEach(g=>{let q;if(g.t==="r")q=g.p.map(p=>[p[0]+sd[0],p[1]+sd[1],p[2]]);else if(g.t==="t"){const h=g.p[0][2],dd=ti===0?d+0.006:-(d-0.006),isS=ti===0;ti++;const P2=g.p.map(p=>[p[0],p[1]]);q=offL(P2,dd).map(p=>[p[0],p[1],h]);
+      /* spiral bilan ulanish nuqtasi siljimaydi: oxirgi (S) yoki birinchi (R) bo'lak faqat devor bo'ylab siljiydi */
+      const n=P2.length;if(n>=3){const fixEnd=(iE,iN,iPrev)=>{const a=P2[iPrev],b=P2[iN],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nn=[-(b[1]-a[1])/l*dd,(b[0]-a[0])/l*dd];q[iN]=[P2[iN][0]+nn[0],P2[iN][1]+nn[1],h];q[iE]=[P2[iE][0],P2[iE][1],h];};
+        if(isS)fixEnd(n-1,n-2,n-3);else{/* teskari yo'nalish */const a=P2[2],b=P2[1],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nn=[-(b[1]-a[1])/l*dd,(b[0]-a[0])/l*dd];/* offL normal R yo'nalishida: a->b teskari, shuning uchun belgisi qarama-qarshi */q[1]=[P2[1][0]-nn[0],P2[1][1]-nn[1],h];q[0]=[P2[0][0],P2[0][1],h];}}}else q=g.p;
     if(out.length&&q.length){const a=out[out.length-1],b=q[0];if(Math.abs(a[0]-b[0])>1e-4&&Math.abs(a[1]-b[1])>1e-4){const nx=q[1]||b,horiz=Math.abs(nx[1]-b[1])<Math.abs(nx[0]-b[0]);/* keyingi bo'lak gorizontal bo'lsa — avval vertikal */out.push(horiz?[a[0],b[1],g.t==="c"?b[2]:a[2]]:[b[0],a[1],g.t==="c"?b[2]:a[2]]);}}
     q.forEach(p=>out.push(p));});
   /* ulanishdagi orqaga qaytish (5 sm "dum") ni olib tashlash */
@@ -458,6 +468,30 @@ function routeFloor(H,f,A,B,loose,snapEnd){H._rg=H._rg||{};const gk=f+(loose?"L"
   const o2=[out[0]];for(let i=1;i<out.length;i++){const a=o2[o2.length-1],b=out[i];if(Math.abs(a[0]-b[0])>1e-6&&Math.abs(a[1]-b[1])>1e-6)o2.push([b[0],a[1]]);o2.push(b);}
   return despike(o2);}
 /* mayda orqaga qaytishlar (⊿, ilmoqcha) va juda qisqa bo'laklarni olib tashlash */
+/* butun tizim bo'yicha: quvur o'tib ketib 180° ortga qaytgan joylarni to'g'rilash (devor faqat eshik/teshikdan, boshqa quvurni kesmasdan, to'siqqa kirmasdan) */
+function unreverse(H,f,paths){const ops=openingsOf(H,f),E=[];H.ok.filter(x=>x.f===f).forEach(x=>{const A=x.P.map(q=>add(q,x.pos));for(let i=0;i<4;i++)E.push([A[i],A[(i+1)%4]]);});
+  const OB=[];H.ok.filter(x=>x.f===f).forEach(x=>(x.r.obst||[]).forEach(o=>{if(+o.w>0&&+o.h>0)OB.push([x.pos[0]+ +o.x,x.pos[1]+ +o.y,x.pos[0]+ +o.x+ +o.w,x.pos[1]+ +o.y+ +o.h]);}));
+  const X=(a,b,c,d)=>{const o=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);return o(c,d,a)*o(c,d,b)<-1e-12&&o(a,b,c)*o(a,b,d)<-1e-12;};
+  const wallOk=(a,b)=>{for(const [p,q] of E){if(!X(a,b,p,q))continue;const d=sub(q,p),L=len(d),u=mul(d,1/L),t=dot(sub(a,p),u),n=[-u[1],u[0]],sa=dot(sub(a,p),n),sb=dot(sub(b,p),n),k=sa/(sa-sb),x=add(a,mul(sub(b,a),k));
+      if(!ops.some(o=>{const v=sub(x,o.c);return Math.abs(dot(v,o.d))<=o.wd/2-0.02&&Math.abs(v[0]*o.d[1]-v[1]*o.d[0])<0.3;}))return false;}
+    for(const o of OB){const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;if(mx>o[0]&&mx<o[2]&&my>o[1]&&my<o[3])return false;}return true;};
+  const segs=paths.map(P=>simp(P));let fixed=0;
+  paths.forEach((P,pi)=>{for(let guard=0;guard<40;guard++){let done=false;
+    for(let i=1;i<P.length-2&&!done;i++){const a=P[i-1],b=P[i];if(Math.abs(a[2]-b[2])>0.02)continue;const u=[b[0]-a[0],b[1]-a[1]],lu=Math.hypot(...u);if(lu<0.03)continue;const uh=[u[0]/lu,u[1]/lu];
+      let m=0;for(let k=i+1;k<=Math.min(P.length-2,i+5)&&!done;k++){const pk=P[k-1],c=P[k];if(Math.abs(c[2]-pk[2])>0.021)break;m+=Math.hypot(c[0]-pk[0],c[1]-pk[1]);if(m>0.7)break;const d=P[k+1];if(Math.abs(d[2]-c[2])>0.021)continue;
+        const w=[d[0]-c[0],d[1]-c[1]],lw=Math.hypot(...w);if(lw<0.03||(uh[0]*w[0]+uh[1]*w[1])/lw>-0.99)continue;
+        /* b..c zanjiri (yon tomonga o'tish) ni ortga suramiz */const ov=Math.min(lu,lw);
+        for(const fr of [1,0.8,0.6,0.4,0.2]){const o=ov*fr,Ch=[];for(let j=i;j<=k;j++)Ch.push([P[j][0]-uh[0]*o,P[j][1]-uh[1]*o,P[j][2]]);let okk=true;for(let j=1;j<Ch.length&&okk;j++)if(!wallOk(Ch[j-1],Ch[j]))okk=false;if(!okk)continue;
+          let hit=false;for(let qi=0;qi<segs.length&&!hit;qi++){const S=segs[qi];for(let q=1;q<S.length;q++){if(qi===pi&&Math.hypot(S[q][0]-b[0],S[q][1]-b[1])<lu+lw+m+0.05)continue;for(let j=1;j<Ch.length;j++)if(X(Ch[j-1],Ch[j],S[q-1],S[q])){hit=true;break;}if(hit)break;}}if(hit)continue;
+          for(let j=i;j<=k;j++)P[j]=Ch[j-i];fixed++;done=true;break;}}}
+    if(!done)break;}segs[pi]=simp(P);});return fixed;}
+/* tranzit oxiridan spiral boshiga: qiyshiq emas — tranzit yo'nalishini davom ettirib, keyin to'g'ri burchak */
+function joinL(P,o,h){const n=P.length;if(n<2)return;const p=P[n-1],pp=P[n-2];if(Math.abs(p[0]-o[0])<1e-4||Math.abs(p[1]-o[1])<1e-4)return;const vert=Math.abs(p[0]-pp[0])<Math.abs(p[1]-pp[1]);P.push(vert?[p[0],o[1],h]:[o[0],p[1],h]);}
+/* yakuniy tozalash: qiyshiq qisqa bo'laklar → to'g'ri burchak; 12 sm gacha "dum"lar olib tashlanadi */
+function tidyP3(P){const o=[P[0]];for(let i=1;i<P.length;i++){const a=o[o.length-1],b=P[i];if(a[2]<0.1&&b[2]<0.1&&Math.abs(a[0]-b[0])>0.004&&Math.abs(a[1]-b[1])>0.004&&Math.hypot(a[0]-b[0],a[1]-b[1])<0.6){const pp=o[o.length-2];const vert=pp?Math.abs(a[0]-pp[0])<Math.abs(a[1]-pp[1]):true;o.push(vert?[a[0],b[1],a[2]]:[b[0],a[1],a[2]]);}o.push(b);}
+  for(let pass=0;pass<4;pass++){let ch=false;for(let i=1;i<o.length-1;i++){const a=o[i-1],b=o[i],c=o[i+1];if(a[2]>0.1||b[2]>0.1||c[2]>0.1)continue;const u=[b[0]-a[0],b[1]-a[1]],v=[c[0]-b[0],c[1]-b[1]],lu=Math.hypot(...u),lv=Math.hypot(...v);
+      if(lu<1e-4||lv<1e-4){if(lu<1e-4&&lv<1e-4)continue;o.splice(i,1);i--;ch=true;continue;}if((u[0]*v[0]+u[1]*v[1])/lu/lv<-0.99&&Math.min(lu,lv)<0.12){o.splice(i,1);i=Math.max(0,i-2);ch=true;}}if(!ch)break;}return o;}
+function simp(c){const o=[c[0]];for(let i=1;i<c.length;i++){const l=o[o.length-1],q=c[i];if(i===c.length-1||Math.abs(q[0]-l[0])+Math.abs(q[1]-l[1])>0.04)o.push(q);}return o;}
 function despike(P){let Q=P.map(p=>p.slice());for(let pass=0;pass<4;pass++){const R=[Q[0]];for(let i=1;i<Q.length;i++){const l=R[R.length-1];if(Math.hypot(Q[i][0]-l[0],Q[i][1]-l[1])<0.004)continue;R.push(Q[i]);}Q=R;
     let ch=false;for(let i=1;i<Q.length-1;i++){const a=Q[i-1],b=Q[i],c=Q[i+1],u=[b[0]-a[0],b[1]-a[1]],v=[c[0]-b[0],c[1]-b[1]],lu=Math.hypot(...u),lv=Math.hypot(...v);if(!lu||!lv)continue;const k=(u[0]*v[0]+u[1]*v[1])/lu/lv,cr=Math.abs(u[0]*v[1]-u[1]*v[0])/lu/lv;
       if(k<-0.99||cr<1e-3){Q.splice(i,1);ch=true;break;}
@@ -484,12 +518,12 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.cross=0;x.loops=[];x.pipe=0;x
     const solveP=(P,allowW)=>{
     /* quvurlar kesishishini sanash (bir xona ichida) */
     const segX=(a,b,c,d)=>{const o=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);return o(c,d,a)*o(c,d,b)<-1e-12&&o(a,b,c)*o(a,b,d)<-1e-12;};
-    const crossN=zs=>{const sg=[];let id=zs.length;zs.forEach((z,li)=>{const p=z.core;for(let i=1;i<p.length;i++)sg.push([li,i,p[i-1],p[i]]);(z.legs||[]).forEach(l=>sg.push([id++,1,l[0],l[1]]));});let c=0;
+    const crossN=zs=>{const sg=[];let id=zs.length;zs.forEach((z,li)=>{const p=z._cs||(z._cs=simp(z.core));for(let i=1;i<p.length;i++)sg.push([li,i,p[i-1],p[i]]);(z.legs||[]).forEach(l=>sg.push([id++,1,l[0],l[1]]));});let c=0;
       for(let i=0;i<sg.length;i++)for(let j=i+1;j<sg.length;j++){const A=sg[i],B=sg[j];if(A[0]===B[0]&&Math.abs(A[1]-B[1])<=1)continue;if(segX(A[2],A[3],B[2],B[3]))c++;}return c;};
     const bbX=Math.max(...P.map(p=>p[0])),bbY=Math.max(...P.map(p=>p[1])),bbX0=Math.min(...P.map(p=>p[0])),bbY0=Math.min(...P.map(p=>p[1]));let tooSmall=false;const R0=Math.max(RMIN,num(st.bendR)/100);
-    const build=(w,te0F,nFrom,tallMode)=>{
+    const build=(w,te0F,nFrom,tallMode,zm)=>{
       const PR=[0,1,2,3].map(k=>P[(w+k)%4]),A0=PR[0],u=nrm(sub(PR[1],PR[0])),vN=[-u[1],u[0]],Lw=len(sub(PR[1],PR[0])),loc=(t,d)=>add(add(A0,mul(u,t)),mul(vN,d)),tOf=p=>dot(sub(p,A0),u),dOf=p=>dot(sub(p,A0),vN);
-      let te0=te0F(Lw,tOf);
+      let te0=te0F(Lw,tOf,dOf,loc);
     let zones=[],okk=false,lastGood=null;
     for(let n=Math.max(nFrom,x.nMin||1);n<=12;n++){zones=[];let good=true,mx=0;
       /* har bir to'rtburchak o'z o'lchami: kollektordan uzoqdagisining ulanish quvuri uzun — u kichikroq, yaqinidagisi kattaroq; konturlar uzunligi teng bo'lsin */
@@ -501,10 +535,11 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.cross=0;x.loops=[];x.pipe=0;x
       /* kollektor quvurlari devor bo'yida qatorlarda, oraliq = qadam (s) — burilishlar bir markazli, kesishmaydi */
       const lanes=2*Math.max(left.length,right.length),ly=j=>0.09+LS*j,band=ly(lanes-1)+2*R+0.01;
       const zd=len(sub(PR[3],PR[0]))-band-ed,tall=tallMode==null?zd>Lw/n*1.05:tallMode;
-      const eL=i=>tall?(i===0?ed:0.5*s):(i===0?ed+s:1.5*s),eR=i=>i===n-1?ed:0.5*s;
-      const ent=i=>tall?B[i+1]-eR(i):B[i]+eL(i);const teL=left.length?Math.max(te0,Math.max(...left.map(ent))+R+s+0.05+0.05*2*left.length):te0,teR=right.length?Math.min(te0,Math.min(...right.map(i=>ent(i)-s))-R-s-0.05-0.05*2*right.length):te0;
+      /* har zona yo'nalishi o'z guruhiga qarab: chap guruh (kollektordan chapda) — devordan ichkariga, o'ng guruh — devor bo'ylab; ikkalasida ham quvur zonadan o'tib ketib ortga qaytmaydi */const TZ=i=>zm?(B[i]+B[i+1])/2<te0:tall;
+      const eL=i=>TZ(i)?(i===0?ed:0.5*s):(i===0?ed+s:1.5*s),eR=i=>i===n-1?ed:0.5*s;
+      const ent=i=>TZ(i)?B[i+1]-eR(i):B[i]+eL(i);const teL=left.length?Math.max(te0,Math.max(...left.map(ent))+R+s+0.05+0.05*2*left.length):te0,teR=right.length?Math.min(te0,Math.min(...right.map(i=>ent(i)-s))-R-s-0.05-0.05*2*right.length):te0;
       for(let i=0;i<n;i++){const Z=[lerp(PR[0],PR[1],bw(i)),lerp(PR[0],PR[1],bw(i+1)),lerp(PR[3],PR[2],bw(i+1)),lerp(PR[3],PR[2],bw(i))],eArr=[band,eR(i),ed,eL(i)];
-        const Zs=tall?[Z[1],Z[2],Z[3],Z[0]]:Z,eS=tall?[eArr[1],eArr[2],eArr[3],eArr[0]]:eArr;
+        const tz=TZ(i),Zs=tz?[Z[1],Z[2],Z[3],Z[0]]:Z,eS=tz?[eArr[1],eArr[2],eArr[3],eArr[0]]:eArr;
         const isL=left.includes(i),grp=isL?left:right,k=grp.indexOf(i),nS=grp.length,jS=isL?2*k+1:2*k,jR=isL?2*k:2*k+1;
         const xo=j=>isL?teL-0.05*(2*nS-j):teR+0.05*(2*nS-j);
         /* har bir to'rtburchak o'z qadamini oladi: markazda bo'shliq qolmasin (100–250 mm oralig'ida) */
@@ -515,17 +550,18 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.cross=0;x.loops=[];x.pipe=0;x
         const retP=[loc(xo(jR),ly(jR)),loc(tR,ly(jR))].concat(Math.abs(tOf(Er)-tR)>1e-6?[loc(tR,dEr)]:[],RET),retR=[R,rLR].concat(Math.abs(tOf(Er)-tR)>1e-6?[R+si]:[],RET.map(()=>R));
         const a=roundPath(supP,supR),b=roundPath(retP,retR),ct=centerTurn(a.pts,b.pts,hp?1:si);
         const core=ct.sup.concat(ct.pts.slice(1),ct.ret.slice().reverse().slice(1));return {sp,hp,a,b,ct,core,si};};
-        const gap1=(core,si,eSx)=>{const Q=inset(Zs,eSx);if(!Q)return 9;const c0=lerp(Q[0],Q[2],.5),u0=nrm(sub(Q[1],Q[0])),v0=nrm(sub(Q[3],Q[0])),L0=len(sub(Q[1],Q[0])),L1=len(sub(Q[3],Q[0]));let w=0;
-          const pts=[];for(let k=-0.5;k<=0.5;k+=0.025){pts.push(add(c0,mul(u0,k*L0)));pts.push(add(c0,mul(v0,k*L1)));}
-          for(const p of pts){let m=1e9;for(let i=1;i<core.length;i++){const a0=core[i-1],d=sub(core[i],a0),L2=d[0]*d[0]+d[1]*d[1]||1e-9;let t=((p[0]-a0[0])*d[0]+(p[1]-a0[1])*d[1])/L2;t=t<0?0:t>1?1:t;const qx=a0[0]+d[0]*t-p[0],qy=a0[1]+d[1]*t-p[1],dd=qx*qx+qy*qy;if(dd<m)m=dd;}w=Math.max(w,2*Math.sqrt(m)/si);}return w;};
-        let BZ=null;const iF=tall?1:2,iP=tall?0:1;outer:for(const fi of [1,0.95,1.05,0.9,1.1])for(const kx of [0,0.33,0.66])for(const ky of [0,0.33,0.66])for(const hv of [0,1]){const si=+(s*fi).toFixed(3);if(si<0.1||si>0.25)continue;const eSx=eS.slice();eSx[iF]+=kx*si;eSx[iP]+=ky*si;const Z_=mk(si,eSx,hv);if(!Z_)continue;const g=gap1(Z_.core,si,eSx)+Math.abs(fi-1)*0.6+(kx+ky)*0.15+(Math.min(Z_.a.minR,Z_.b.minR,Z_.ct.minR)<R-1e-3?2:0);if(!BZ||g<BZ.g)BZ=Object.assign(Z_,{g,eSx});if(BZ.g<1.4)break outer;}
+        const gap1=(core,si,eSx,cap=1e9)=>{const Q=inset(Zs,eSx);if(!Q)return 9;const c0=lerp(Q[0],Q[2],.5),u0=nrm(sub(Q[1],Q[0])),v0=nrm(sub(Q[3],Q[0])),L0=len(sub(Q[1],Q[0])),L1=len(sub(Q[3],Q[0]));let w=0;
+          const pts=[];for(let k=-0.5;k<=0.5;k+=0.04){pts.push(add(c0,mul(u0,k*L0)));pts.push(add(c0,mul(v0,k*L1)));}
+          /* tezlik: yoylardagi mayda nuqtalarni siyraklashtiramiz (≈1 sm xato) */const cs=[core[0]];for(let i=1;i<core.length;i++){const l=cs[cs.length-1],q=core[i];if(i===core.length-1||Math.abs(q[0]-l[0])+Math.abs(q[1]-l[1])>0.05)cs.push(q);}core=cs;
+          for(const p of pts){let m=1e9;for(let i=1;i<core.length;i++){const a0=core[i-1],d=[core[i][0]-a0[0],core[i][1]-a0[1]],L2=d[0]*d[0]+d[1]*d[1]||1e-9;let t=((p[0]-a0[0])*d[0]+(p[1]-a0[1])*d[1])/L2;t=t<0?0:t>1?1:t;const qx=a0[0]+d[0]*t-p[0],qy=a0[1]+d[1]*t-p[1],dd=qx*qx+qy*qy;if(dd<m)m=dd;}w=Math.max(w,2*Math.sqrt(m)/si);if(w>cap)return w;}return w;};
+        let BZ=null;const iF=tz?1:2,iP=tz?0:1;outer:for(const fi of [1,0.95,1.05,0.9,1.1])for(const kx of [0,0.5])for(const ky of [0,0.5])for(const hv of [0,1]){const si=+(s*fi).toFixed(3);if(si<0.1||si>0.25)continue;const eSx=eS.slice();eSx[iF]+=kx*si;eSx[iP]+=ky*si;const Z_=mk(si,eSx,hv);if(!Z_)continue;const pen=Math.abs(fi-1)*0.6+(kx+ky)*0.15,g=gap1(Z_.core,si,eSx,BZ?BZ.g-pen:1e9)+Math.abs(fi-1)*0.6+(kx+ky)*0.15+(Math.min(Z_.a.minR,Z_.b.minR,Z_.ct.minR)<R-1e-3?2:0);if(!BZ||g<BZ.g)BZ=Object.assign(Z_,{g,eSx});if(BZ.g<1.4)break outer;}
         if(!BZ){good=false;break;}const {sp,hp,a,b,ct,core,si}=BZ;const eSu=BZ.eSx;
         const tr=o=>{if(!C||OWN)return [];const pa=portAbs(0),oa=toAbs(o);return [pa,[pa[0],oa[1]],oa];};
         const trS=tr(core[0]),trR=tr(core[core.length-1]).reverse();
         const L=plen(core)+(plen(trS)+plen(trR))*(x.kf||1)+(C?1.3:6);mx=Math.max(mx,L);
         const arrS=toAbs(loc(tOf(core[0]),0.03)),arrR=toAbs(loc(tOf(core[core.length-1]),0.03)),legs=(C&&!OWN)?[[loc(tOf(core[0]),0.02),core[0]],[loc(tOf(core[core.length-1]),0.02),core[core.length-1]]]:[];zones.push({tall,own:OWN,Z:Zs,eArr:eSu,sp,core,arrS,arrR,legs,tailSL:[core[0]],tailRL:[core[core.length-1]],trS,trR,L,minR:Math.min(a.minR,b.minR,ct.minR),dS:xo(jS)-te0,dR:xo(jR)-te0,s:si});}
       if(!good){if(n===1)tooSmall=true;zones=lastGood||[];break;}okk=true;lastGood=zones;if(mx<=maxL)break;}
-    if(!okk||!zones.length){zones=[];okk=false;}return {zones,okk,mx:zones.reduce((m,z)=>Math.max(m,z.L),0),n:zones.length,tall:zones.length?zones[0].tall:null,w,te0F};};
+    if(!okk||!zones.length){zones=[];okk=false;}return {zones,okk,mx:zones.reduce((m,z)=>Math.max(m,z.L),0),n:zones.length,tall:zones.length?zones[0].tall:null,w,te0F,zm};};
     /* mantiqsiz bukilish: quvur kirishda o'tib ketib, 180° ortga qaytib o'z yonidan parallel ketishi */
     const uN=zs=>{let n=0;const rs=(P,lim)=>{/* 5 sm qadam bilan qayta namunalash, faqat boshidagi lim m */const o=[P[0]];let acc=0;for(let i=1;i<P.length&&acc<lim;i++){const a=P[i-1],b=P[i],l=Math.hypot(b[0]-a[0],b[1]-a[1]);for(let t=0.05;t<=l;t+=0.05){o.push([a[0]+(b[0]-a[0])*t/l,a[1]+(b[1]-a[1])*t/l]);}acc+=l;}return o;};
       const has=S=>{const T=[];for(let i=1;i<S.length;i++){const dx=S[i][0]-S[i-1][0],dy=S[i][1]-S[i-1][1],l=Math.hypot(dx,dy)||1;T.push([dx/l,dy/l]);}
@@ -534,24 +570,29 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.cross=0;x.loops=[];x.pipe=0;x
     const okW=i=>!allowW||allowW[i];let w0=allowW?allowW.findIndex(Boolean):0;let doorP=null;if(C){if(OWN)w0=C.wall;else{let b=1e9;for(let i=0;i<4;i++){if(!okW(i))continue;const d=man(toAbs(lerp(P[i],P[(i+1)%4],.5)),C.floor);if(d<b){b=d;w0=i;}}
       /* amaliyot: quvurlar xonaga eshikdan (yoki usta qo'ygan teshikdan) kiradi — kirish devori shu */
       let bd=1e9;if(C.room!==x)openingsOf(H,x.f).forEach(o=>{const oc=sub(o.c,x.pos);for(let i=0;i<4;i++){if(!okW(i))continue;const a=P[i],q=P[(i+1)%4],d=nrm(sub(q,a)),L=len(sub(q,a)),t=dot(sub(oc,a),d),off=Math.abs((oc[0]-a[0])*d[1]-(oc[1]-a[1])*d[0]);if(off<0.35&&t>0.05&&t<L-0.05){const sc=man(o.c,C.floor)+(o.kind==="hole"?0.5:0);if(sc<bd){bd=sc;w0=i;doorP=oc;}}}});}}
-    const teDef=(Lw,tOf)=>{if(!C)return Lw/2;const cp=OWN?sub(C.wallPt,x.pos):(doorP||sub(C.floor,x.pos));return Math.max(0.2,Math.min(Lw-0.2,tOf(cp)));};
+    const teDef=(Lw,tOf,dOf,loc)=>{if(!C)return Lw/2;let cp=OWN?sub(C.wallPt,x.pos):(doorP||sub(C.floor,x.pos));
+      /* eshik bo'lmasa: kollektordan kelgan quvur devorga qayerda yetib keladi — kirish nuqtasi o'sha joyda (o'tib ketib ortga qaytmasin) */
+      if(!OWN&&!doorP&&dOf&&loc){const ck=x.r.id+":"+Lw.toFixed(2)+":"+tOf([0,0]).toFixed(3)+":"+dOf([0,0]).toFixed(3);H._arr=H._arr||{};let ta=H._arr[ck];
+        if(ta===undefined){ta=null;const rt=routeFloor(H,x.f,portAbs(0),toAbs(loc(Lw/2,0.03)));if(rt){for(let i=0;i<rt.length;i++){const p=sub(rt[i],x.pos),t=tOf(p),dd=dOf(p);if(Math.abs(dd)<0.12&&t>=0&&t<=Lw){ta=t;break;}if(i>0){const q=sub(rt[i-1],x.pos),d0=dOf(q),d1=dd;if(d0*d1<0||Math.abs(d1)<0.12){const k=Math.abs(d0)/(Math.abs(d0)+Math.abs(d1)||1),tt=tOf(q)+(t-tOf(q))*k;if(tt>=0&&tt<=Lw){ta=tt;break;}}}}}H._arr[ck]=ta;}
+        if(ta!=null)return Math.max(0.2,Math.min(Lw-0.2,ta));}
+      return Math.max(0.2,Math.min(Lw-0.2,tOf(cp)));};
     /* nomzodlar: avval odatiy; kesishma bo'lsa — konturlar soni, yo'nalish, (tranzitda) kirish nuqtasi va devor o'zgartiriladi */
     const cands=[[w0,teDef,1,null]];for(let n=2;n<=6;n++)cands.push([w0,teDef,n,null]);[true,false].forEach(tm=>{for(let n=1;n<=6;n++)cands.push([w0,teDef,n,tm]);});
-    if(!OWN){const sh=[0.3,-0.3,0.6,-0.6,1,-1,1.5,-1.5];sh.forEach(d=>{const f=(Lw,tOf)=>Math.max(0.2,Math.min(Lw-0.2,teDef(Lw,tOf)+d));cands.push([w0,f,1,null]);});
+    if(!OWN){const sh=[0.3,-0.3,0.6,-0.6,1,-1,1.5,-1.5];sh.forEach(d=>{const f=(Lw,tOf,dOf,loc)=>Math.max(0.2,Math.min(Lw-0.2,teDef(Lw,tOf,dOf,loc)+d));cands.push([w0,f,1,null]);});
       [1,2,3].forEach(k=>{const ww=(w0+k)%4;if(!okW(ww))return;cands.push([ww,(Lw)=>Lw/2,1,null]);cands.push([ww,teDef,1,null]);});}
-    let best=null,bc=1e9;for(const [cw,cf,cn,ct] of cands){const R=build(cw,cf,cn,ct);if(!R.okk)continue;const outN=R.zones.reduce((a,z)=>a+(z.core.some(p=>p[0]<bbX0-1e-3||p[1]<bbY0-1e-3||p[0]>bbX+1e-3||p[1]>bbY+1e-3)?1:0),0);const hard=crossN(R.zones)+outN+(R.mx>maxL?0.5:0)+(R.zones.some(z=>z.minR<R0-1e-3)?0.25:0),uu=uN(R.zones),c=hard*3+0.3*uu+0.45*R.zones.length;if(c<bc){bc=c;best=R;best._hard=hard;}if(hard===0&&uu===0)break;}
+    const cands2=[];cands.forEach(c=>{if(c[3]==null)cands2.push(c.concat([1]));});const nZ1=cands2.length;cands.forEach(c=>cands2.push(c.concat([0])));let best=null,bc=1e9;for(let ci=0;ci<cands2.length;ci++){const [cw,cf,cn,ct,zm]=cands2[ci];if(ci===nZ1&&best&&best._hard===0&&best._uu===0)break;const R=build(cw,cf,cn,ct,zm);if(!R.okk)continue;const outN=R.zones.reduce((a,z)=>a+(z.core.some(p=>p[0]<bbX0-1e-3||p[1]<bbY0-1e-3||p[0]>bbX+1e-3||p[1]>bbY+1e-3)?1:0),0);const hard=crossN(R.zones)+outN+(R.mx>maxL?0.5:0)+(R.zones.some(z=>z.minR<R0-1e-3)?0.25:0),uu=uN(R.zones),gs=hard||uu?0:gapScore(R.zones),c=hard*3+2*uu+0.45*R.zones.length+Math.max(0,gs-1.5)*2;if(c<bc){bc=c;best=R;best._hard=hard;best._uu=uu;}if(hard===0&&uu===0&&(gs<1.5||ci>=2))break;}
     if(best&&best.zones.length&&gapScore(best.zones)>1.45){/* spiralni 90° burib ko'ramiz: markaz bo'shlig'i kichikroq bo'lsa shuni olamiz */
-      const g0=gapScore(best.zones);for(const nn of [best.n,best.n+1]){const R2=build(best.w,best.te0F,nn,!best.tall);if(!R2.okk||R2.zones.length!==nn)continue;const bad=crossN(R2.zones)+(uN(R2.zones)>uN(best.zones)?1:0)+(R2.mx>maxL?1:0)+R2.zones.reduce((a,z)=>a+(z.core.some(p=>p[0]<bbX0-1e-3||p[1]<bbY0-1e-3||p[0]>bbX+1e-3||p[1]>bbY+1e-3)?1:0),0)+(R2.zones.some(z=>z.minR<R0-1e-3)?1:0);if(bad)continue;const g2=gapScore(R2.zones);if(g2<g0-0.1){best=R2;break;}}}
+      const g0=gapScore(best.zones);for(const nn of [best.n,best.n+1]){const R2=build(best.w,best.te0F,nn,!best.tall,best.zm);if(!R2.okk||R2.zones.length!==nn)continue;const bad=crossN(R2.zones)+(uN(R2.zones)>uN(best.zones)?1:0)+(R2.mx>maxL?1:0)+R2.zones.reduce((a,z)=>a+(z.core.some(p=>p[0]<bbX0-1e-3||p[1]<bbY0-1e-3||p[0]>bbX+1e-3||p[1]>bbY+1e-3)?1:0),0)+(R2.zones.some(z=>z.minR<R0-1e-3)?1:0);if(bad)continue;const g2=gapScore(R2.zones);if(g2<g0-0.1){best=R2;break;}}}
     x.cross=(x.cross||0)+(best?crossN(best.zones):0);return {zones:best?best.zones:[],tooSmall};};
     /* basseyn: hovuz ostiga issiq pol yo'q — faqat atrofidagi yo'lak (odam yuradigan qism) to'ldiriladi */
     let zones=[];const pr0=(r.type==="basseyn"&&H.P.pool&&H.P.pool.on&&H.P.pool.indoor!==false)?poolRect(x,H.P.pool.area):null;x.poolRect=pr0;
     /* to'siq (zina, kladovka): xona ichida issiq polsiz to'rtburchak — quvurlar aylanib o'tadi */
     const ob=(r.obst||[])[0],pr=pr0||(ob&&+ob.w>0&&+ob.h>0?(()=>{const xs=P.map(p=>p[0]),ys=P.map(p=>p[1]),X0=Math.min(...xs),Y0=Math.min(...ys),X1=Math.max(...xs),Y1=Math.max(...ys);return {room:[X0,Y0,X1,Y1],pool:[Math.max(X0,+ob.x),Math.max(Y0,+ob.y),Math.min(X1,+ob.x+ +ob.w),Math.min(Y1,+ob.y+ +ob.h)],alongY:true,obst:true};})():null);
     /* oraliq bir xil bo'lsin: qadamni xona o'lchamiga moslab tanlaymiz (markazda katta bo'shliq qolmasin) */
-    const gapScore=zs=>{let w=0;zs.forEach(z=>{const Q=inset(z.Z,z.eArr);if(!Q)return;const xs=Q.map(p=>p[0]),ys=Q.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),c=z.core,st_=0.06;
-        for(let px=x0+0.03;px<x1;px+=st_)for(let py=y0+0.03;py<y1;py+=st_){let m=1e9;for(let i=1;i<c.length;i++){const a=c[i-1],b=c[i],d=sub(b,a),L2=d[0]*d[0]+d[1]*d[1]||1e-9;let t=((px-a[0])*d[0]+(py-a[1])*d[1])/L2;t=t<0?0:t>1?1:t;const qx=a[0]+d[0]*t-px,qy=a[1]+d[1]*t-py,dd=qx*qx+qy*qy;if(dd<m)m=dd;}
+    const gapScore=zs=>{let w=0;zs.forEach(z=>{const Q=inset(z.Z,z.eArr);if(!Q)return;const xs=Q.map(p=>p[0]),ys=Q.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),c=z._cs||(z._cs=simp(z.core)),st_=0.08;
+        for(let px=x0+0.03;px<x1;px+=st_)for(let py=y0+0.03;py<y1;py+=st_){let m=1e9;for(let i=1;i<c.length;i++){const a=c[i-1],b=c[i],d=[b[0]-a[0],b[1]-a[1]],L2=d[0]*d[0]+d[1]*d[1]||1e-9;let t=((px-a[0])*d[0]+(py-a[1])*d[1])/L2;t=t<0?0:t>1?1:t;const qx=a[0]+d[0]*t-px,qy=a[1]+d[1]*t-py,dd=qx*qx+qy*qy;if(dd<m)m=dd;}
           w=Math.max(w,2*Math.sqrt(m)/z.s);}});return w;};
-    const pickS=fn=>{const all=[];for(const f of [1,0.95,1.05]){s=Math.max(0.1,Math.min(0.3,Math.round(s0*f*100)/100));const Z=fn();if(!Z.length)continue;all.push({sc:gapScore(Z)+Math.abs(f-1)*0.8,Z,s});}
+    const pickS=fn=>{const all=[];for(const f of [1,0.95,1.05]){s=Math.max(0.1,Math.min(0.3,Math.round(s0*f*100)/100));const Z=fn();if(!Z.length)continue;const g=gapScore(Z);all.push({sc:g+Math.abs(f-1)*0.8,Z,s});if(f===1&&g<1.3)break;}
       /* kamroq kontur afzal: har ortiqcha kontur jarima (kollektor chiqishi tejaladi, konturlar 65 m ga yaqin) */const mn=Math.min(...all.map(o=>o.Z.length));let best=null;all.forEach(o=>{o.sc+=0.8*(o.Z.length-mn);if(!best||o.sc<best.sc)best=o;});s=best?best.s:s0;return best?best.Z:[];};
     x.sUsed=s0;
     /* xotira: shu xona, shu kollektor joyi va sozlamalar uchun oldin hisoblangan bo'lsa — qayta hisoblamaymiz */
@@ -577,9 +618,9 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.cross=0;x.loops=[];x.pipe=0;x
     zones.forEach(z=>{z.A=Math.min(A/zones.length,plen(z.core)*z.s);z.room=x;
       const inRoom=z.core.map(toAbs);z.full=z.trS.concat(inRoom,z.trR);
       /* 3D yo'li: [x,y,balandlik] — kollektorda ko'tarilish, tranzit izolyatsiya ostida (2 sm), xonada 6 sm */
-      const p3=[];if(C){const pS=portAbs(z.dS,z.own);if(z.own){const o=inRoom[0];p3.push([pS[0],pS[1],0.78],[o[0],o[1],0.78],[o[0],o[1],Y0]);}else{p3.push([pS[0],pS[1],0.78],[pS[0],pS[1],0.075]);z.trS.slice(1,-1).forEach(p=>p3.push([p[0],p[1],0.075]));const o=inRoom[0];p3.push([o[0],o[1],0.075]);}}
+      const p3=[];if(C){const pS=portAbs(z.dS,z.own);if(z.own){const o=inRoom[0];p3.push([pS[0],pS[1],0.78],[o[0],o[1],0.78],[o[0],o[1],Y0]);}else{p3.push([pS[0],pS[1],0.78],[pS[0],pS[1],0.075]);z.trS.slice(1,-1).forEach(p=>p3.push([p[0],p[1],0.075]));const o=inRoom[0];joinL(p3,o,0.075);p3.push([o[0],o[1],0.075]);}}
       inRoom.forEach(p=>p3.push([p[0],p[1],Y0]));
-      if(C){const pR=portAbs(z.dR,z.own);if(z.own){const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.58],[pR[0],pR[1],0.58]);}else{const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.075]);z.trR.slice(1,-1).forEach(p=>p3.push([p[0],p[1],0.075]));p3.push([pR[0],pR[1],0.075],[pR[0],pR[1],0.58]);}}
+      if(C){const pR=portAbs(z.dR,z.own);if(z.own){const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.58],[pR[0],pR[1],0.58]);}else{const o=inRoom[inRoom.length-1];p3.push([o[0],o[1],0.075]);const tr=z.trR.slice(1,-1);if(tr.length){/* teskari tomondan ham to'g'ri burchak */const q=[[tr[1]?tr[1][0]:tr[0][0],tr[1]?tr[1][1]:tr[0][1],0.075],[tr[0][0],tr[0][1],0.075]];joinL(q,o,0.075);if(q.length>2)p3.push(q[2]);}tr.forEach(p=>p3.push([p[0],p[1],0.075]));p3.push([pR[0],pR[1],0.075],[pR[0],pR[1],0.58]);}}
       z.p3=p3;});
     x.loops=zones;x.pipe=zones.reduce((t,z)=>t+z.L,0);x.Aheat=zones.reduce((t,z)=>t+z.A,0);
     const ts=num(st.tsF),tr=num(st.trF);
