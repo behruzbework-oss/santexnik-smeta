@@ -53,7 +53,7 @@ details summary{cursor:pointer;font-size:14px;color:var(--ac);margin-top:6px}
 </style>
 </head>
 <body>
-<header><div><h1>Santexnik Smeta</h1><small>Issiq pol · radiator · qozonxona</small></div><span class="row"><button class="sm" onclick="App.toBot()">Botga yuborish</button><button class="sec sm" onclick="App.share()">Ulashish</button></span></header>
+<header><div><h1>Santexnik Smeta</h1><small>Issiq pol · radiator</small></div><span class="row"><button class="sm" onclick="App.toBot()">Botga yuborish</button><button class="sec sm" onclick="App.share()">Ulashish</button></span></header>
 
 <section class="page on" id="p-rooms">
   <div id="roomList"></div>
@@ -65,7 +65,7 @@ details summary{cursor:pointer;font-size:14px;color:var(--ac);margin-top:6px}
   <div class="tabs"><button class="on" data-m="pipes" onclick="App.mode3d(this)">Quvurlar</button><button data-m="heat" onclick="App.mode3d(this)">Issiqlik xaritasi</button></div>
   <div id="v3d"></div>
   <div class="legend" id="leg3d"></div>
-  <p class="mut">Ikki barmoq bilan kattalashtiring, bitta barmoq bilan aylantiring. Xonalar joyini xona kartasidagi "Joylashuv X / Y" orqali o'zgartirasiz.</p>
+  <p class="mut">Ikki barmoq bilan kattalashtiring, bitta barmoq bilan aylantiring. Xonani boshqasining yoniga xona kartasidagi "Qaysi xonaga yopishsin" orqali qo'yasiz.</p>
 </section>
 
 <section class="page" id="p-smeta">
@@ -139,17 +139,17 @@ const PRICE_DEF = {
 };
 const SET_DEF = {tOut:-15,people:4,tsF:45,trF:35,tsR:70,trR:55,wall:"gisht38",win:"pl2",roof:"izol",floor:"izol",pipe:"16",maxLoop:90,edge:10,screed:7,q70:180,screedRes:7};
 
-function demo(){return [
+function demo(){const r=[
   room("Mehmonxona","yashash",[5,4.02,5,4.2],0,2.8,[true,true,false,false],3,"ikkalasi","laminat",15,0,0),
   room("Yotoqxona","yotoq",[4,3.5,4,3.5],0,2.8,[true,false,false,true],1.8,"pol","laminat",15,5.4,0),
   room("Hammom","hammom",[2.5,2,2.5,2],0,2.6,[false,false,true,false],0.5,"ikkalasi","kafel",10,5.4,3.7)
-];}
-function room(name,type,s,diag,h,ext,win,heat,cover,step,x,y){return {id:Math.random().toString(36).slice(2,8),name,type,a:s[0],b:s[1],c:s[2],d:s[3],diag,diag2:0,h,ext,win,heat,cover,step,dist:3,x,y,top:true,ground:true,open:false};}
+];r[1].att=r[0].id;r[1].side="r";r[1].ext=[true,true,false,false];r[2].att=r[1].id;r[2].side="t";r[2].ext=[false,true,true,false];return r;}
+function room(name,type,s,diag,h,ext,win,heat,cover,step,x,y,att,side){return {id:Math.random().toString(36).slice(2,8),name,type,a:s[0],b:s[1],c:s[2],d:s[3],diag,diag2:0,h,ext,win,heat,cover,step,dist:3,x,y,att:att||"",side:side||"r",top:true,ground:true,open:false};}
 
 let S = load();
-function load(){try{const j=JSON.parse(localStorage.getItem("usta_v1"));if(j&&j.rooms)return fill(j);}catch(e){}return fill({rooms:demo()});}
+function load(){try{const j=JSON.parse(localStorage.getItem("usta_v2"));if(j&&j.rooms)return fill(j);}catch(e){}return fill({rooms:demo()});}
 function fill(j){j.set=Object.assign({},SET_DEF,j.set||{});j.price=Object.assign({},Object.fromEntries(Object.entries(PRICE_DEF).map(([k,v])=>[k,v[0]])),j.price||{});j.variant=j.variant||"orta";return j;}
-function save(){localStorage.setItem("usta_v1",JSON.stringify(S));}
+function save(){localStorage.setItem("usta_v2",JSON.stringify(S));}
 const num=v=>{const n=parseFloat(String(v).replace(",","."));return isFinite(n)?n:0;};
 const fmt=(n,d=0)=>n.toLocaleString("ru-RU",{minimumFractionDigits:d,maximumFractionDigits:d});
 
@@ -214,6 +214,13 @@ function calcRoom(r,st){
 
 function calcHouse(){
   const st=S.set,rs=S.rooms.map(r=>calcRoom(r,st)),ok=rs.filter(x=>!x.err);
+  const pos={},W=0.12,bb=x=>{const xs=x.P.map(p=>p[0]),ys=x.P.map(p=>p[1]);return [Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];};
+  const place=(x,d)=>{const r=x.r;if(pos[r.id])return pos[r.id];const o=r.att&&ok.find(y=>y.r.id===r.att&&y.r.id!==r.id);
+    if(!o||d>20){pos[r.id]=[num(r.x),num(r.y)];return pos[r.id];}const op=place(o,d+1),ob=bb(o),mb=bb(x);let px,py;
+    if(r.side==="r"){px=op[0]+ob[2]+W-mb[0];py=op[1]+ob[1]-mb[1];}else if(r.side==="l"){px=op[0]+ob[0]-W-mb[2];py=op[1]+ob[1]-mb[1];}
+    else if(r.side==="t"){px=op[0]+ob[0]-mb[0];py=op[1]+ob[3]+W-mb[1];}else{px=op[0]+ob[0]-mb[0];py=op[1]+ob[1]-W-mb[3];}
+    pos[r.id]=[px,py];return pos[r.id];};
+  ok.forEach(x=>{const p=place(x,0);x.px=p[0];x.py=p[1];});
   const H={rs,ok,A:0,Q:0,pipe:0,loops:0,sec:0,rads:0,per:0,hasPol:false,hasRad:false};
   ok.forEach(x=>{H.A+=x.A;H.Q+=x.Q;H.pipe+=x.pipe;H.loops+=x.loops.length;H.sec+=x.sec;H.rads+=x.rads;if(x.loops.length){H.per+=x.per;H.Apol=(H.Apol||0)+x.A;H.hasPol=true;}if(x.sec)H.hasRad=true;});
   H.Apol=H.Apol||0;
@@ -284,7 +291,8 @@ function renderRooms(H){const el=document.getElementById("roomList");el.innerHTM
     <label class="chk"><input type="checkbox" ${r.top?"checked":""} onchange="App.set('${r.id}','top',this.checked)">Ustida tom</label><label class="chk"><input type="checkbox" ${r.ground?"checked":""} onchange="App.set('${r.id}','ground',this.checked)">Ostida yer</label></div>
     <div class="grid" style="margin-top:6px"><div><label>Isitish</label><select onchange="App.set('${r.id}','heat',this.value)">${[["pol","Issiq pol"],["radiator","Radiator"],["ikkalasi","Ikkalasi"]].map(([k,v])=>`<option value="${k}" ${r.heat===k?"selected":""}>${v}</option>`).join("")}</select></div>
     <div><label>Pol qoplamasi</label><select onchange="App.set('${r.id}','cover',this.value)">${[["kafel","Kafel / tosh"],["laminat","Laminat / parket"],["linoleum","Linoleum"]].map(([k,v])=>`<option value="${k}" ${r.cover===k?"selected":""}>${v}</option>`).join("")}</select></div>
-    <div><label>Quvur qadami, sm</label><select onchange="App.set('${r.id}','step',this.value)">${[10,15,20,25,30].map(v=>`<option ${num(r.step)===v?"selected":""}>${v}</option>`).join("")}</select></div>${inp(r,"dist","Kollektorgacha, m")}${inp(r,"x","Joylashuv X, m")}${inp(r,"y","Joylashuv Y, m")}</div>
+    <div><label>Quvur qadami, sm</label><select onchange="App.set('${r.id}','step',this.value)">${[10,15,20,25,30].map(v=>`<option ${num(r.step)===v?"selected":""}>${v}</option>`).join("")}</select></div>${inp(r,"dist","Kollektorgacha, m")}<div><label>Qaysi xonaga yopishsin</label><select onchange="App.set('${r.id}','att',this.value)"><option value="">— Hech biriga (X/Y)</option>${S.rooms.filter(o=>o.id!==r.id).map(o=>`<option value="${o.id}" ${r.att===o.id?"selected":""}>${o.name}</option>`).join("")}</select></div>
+    ${r.att?`<div><label>Qaysi tomoniga</label><select onchange="App.set('${r.id}','side',this.value)">${[["r","O'ng"],["l","Chap"],["t","Yuqori"],["b","Past"]].map(([k,v])=>`<option value="${k}" ${r.side===k?"selected":""}>${v}</option>`).join("")}</select></div>`:`${inp(r,"x","Joylashuv X, m")}${inp(r,"y","Joylashuv Y, m")}`}</div>
     <div class="row" style="margin-top:10px"><button class="del sm" onclick="App.del('${r.id}')">Xonani o'chirish</button><button class="sec sm" onclick="App.dup('${r.id}')">Nusxa olish</button></div>`;}
   return `<div class="card">${head}${body}</div>`;}).join("");}
 function renderSum(H){const el=document.getElementById("houseSum");el.innerHTML=`<div class="stat"><span>Maydon</span><b>${fmt(H.A,2)} m²</b></div><div class="stat"><span>Issiqlik yo'qotish</span><b>${fmt(H.Q/1000,1)} kVt</b></div><div class="stat"><span>Kotyol quvvati (tavsiya)</span><b>${H.kw} kVt</b></div>
@@ -303,12 +311,12 @@ App.budget=()=>{const b=num((document.getElementById("budget").value||"").replac
 function renderSettings(){document.querySelectorAll("[data-s]").forEach(e=>{e.value=S.set[e.dataset.s];e.onchange=()=>{S.set[e.dataset.s]=e.tagName==="SELECT"?e.value:num(e.value);render();};});
   document.getElementById("priceList").innerHTML=Object.entries(PRICE_DEF).map(([k,v])=>`<div><label>${v[1]}</label><input inputmode="numeric" value="${S.price[k]}" onchange="App.price('${k}',this.value)"></div>`).join("");}
 const R=id=>S.rooms.find(r=>r.id===id);
-App.set=(id,k,v)=>{const r=R(id);r[k]=typeof v==="boolean"||["name","type","heat","cover"].includes(k)?v:num(v);render();};
+App.set=(id,k,v)=>{const r=R(id);r[k]=typeof v==="boolean"||["name","type","heat","cover","att","side"].includes(k)?v:num(v);render();};
 App.ext=(id,i,v)=>{R(id).ext[i]=v;render();};
 App.toggle=id=>{const r=R(id);r.open=!r.open;render();};
-App.addRoom=()=>{const mx=S.rooms.reduce((m,r)=>Math.max(m,num(r.x)+num(r.a)),0);const r=room("Xona "+(S.rooms.length+1),"yashash",[4,3.5,4,3.5],0,2.8,[false,false,false,false],0,"pol","laminat",15,mx+0.4,0);r.open=true;S.rooms.push(r);render();};
-App.del=id=>{if(!confirm("Xonani o'chirasizmi?"))return;S.rooms=S.rooms.filter(r=>r.id!==id);render();};
-App.dup=id=>{const r=JSON.parse(JSON.stringify(R(id)));r.id=Math.random().toString(36).slice(2,8);r.name+=" (nusxa)";r.x=num(r.x)+num(r.a)+0.4;S.rooms.push(r);render();};
+App.addRoom=()=>{const last=S.rooms[S.rooms.length-1];const r=room("Xona "+(S.rooms.length+1),"yashash",[4,3.5,4,3.5],0,2.8,[false,false,false,false],0,"pol","laminat",15,0,0,last?last.id:"","r");r.open=true;S.rooms.push(r);render();};
+App.del=id=>{if(!confirm("Xonani o'chirasizmi?"))return;S.rooms=S.rooms.filter(r=>r.id!==id);S.rooms.forEach(r=>{if(r.att===id)r.att="";});render();};
+App.dup=id=>{const r=JSON.parse(JSON.stringify(R(id)));r.id=Math.random().toString(36).slice(2,8);r.name+=" (nusxa)";r.att=id;r.side="r";S.rooms.push(r);render();};
 App.variant=k=>{S.variant=k;render();};
 App.price=(k,v)=>{S.price[k]=num(String(v).replace(/\s/g,""));render();};
 App.reset=()=>{if(!confirm("Hamma xonalar o'chadi va namuna loyiha qaytadi. Davom etasizmi?"))return;S=fill({rooms:demo()});renderSettings();render();};
@@ -342,7 +350,7 @@ function tube(pts,ox,oy,y,col){if(pts.length<2)return null;const v=pts.map(p=>ne
     const a=V.clone().add(cur.clone().sub(V).setLength(r)),b=V.clone().add(N.clone().sub(V).setLength(r));if(cur.distanceTo(a)>1e-4)path.add(new THREE.LineCurve3(cur,a));path.add(new THREE.QuadraticBezierCurve3(a,V.clone(),b));cur=b;}
   if(!path.curves.length)return null;return new THREE.Mesh(new THREE.TubeGeometry(path,Math.min(3000,path.curves.length*6),0.022,5,false),mat(col));}
 function build(H){if(!started)return;if(group)scene.remove(group);group=new THREE.Group();let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
-  H.ok.forEach(x=>{const ox=+x.r.x||0,oy=+x.r.y||0,P=x.P;P.forEach(p=>{mnx=Math.min(mnx,p[0]+ox);mxx=Math.max(mxx,p[0]+ox);mny=Math.min(mny,p[1]+oy);mxy=Math.max(mxy,p[1]+oy);});
+  H.ok.forEach(x=>{const ox=x.px||0,oy=x.py||0,P=x.P;P.forEach(p=>{mnx=Math.min(mnx,p[0]+ox);mxx=Math.max(mxx,p[0]+ox);mny=Math.min(mny,p[1]+oy);mxy=Math.max(mxy,p[1]+oy);});
     const sh=new THREE.Shape(P.map(p=>new THREE.Vector2(p[0]+ox,p[1]+oy)));const fg=new THREE.ExtrudeGeometry(sh,{depth:0.08,bevelEnabled:false});fg.rotateX(-Math.PI/2);
     const floor=new THREE.Mesh(fg,mat(mode==="heat"&&x.loops.length?heatCol(x.tF):(x.loops.length?0xd9d4c7:0xcfcfcf)));group.add(floor);
     for(let i=0;i<4;i++){const p=P[i],q=P[(i+1)%4],L=Math.hypot(q[0]-p[0],q[1]-p[1]),wh=1.0;const w=new THREE.Mesh(new THREE.BoxGeometry(L+0.12,wh,0.12),mat(x.r.ext[i]?0xc9a77c:0xf2efe8));
@@ -353,10 +361,10 @@ function build(H){if(!started)return;if(group)scene.remove(group);group=new THRE
         const rg=new THREE.Group();for(let s=0;s<per;s++){const sec=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.58,0.09),mat(0xffffff));sec.position.x=(s-(per-1)/2)*0.08;rg.add(sec);}
         rg.position.set(m[0]+n[0]*0.15+ox,0.42,-(m[1]+n[1]*0.15+oy));rg.rotation.y=Math.atan2(dv[1],dv[0]);group.add(rg);}}
   });
-  if(H.hasPol&&H.ok.length){const x=H.ok.find(r=>r.loops.length);const ox=+x.r.x||0,oy=+x.r.y||0;const k=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.7,0.14),mat(0x9aa4ad));k.add(body);
+  if(H.hasPol&&H.ok.length){const x=H.ok.find(r=>r.loops.length);const ox=x.px||0,oy=x.py||0;const k=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.7,0.14),mat(0x9aa4ad));k.add(body);
     const bar1=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.5,8),mat(0xe5484d));bar1.rotation.z=Math.PI/2;bar1.position.set(0,0.15,0.09);k.add(bar1);const bar2=bar1.clone();bar2.material=mat(0x2f80ed);bar2.position.y=-0.1;k.add(bar2);
     k.position.set(x.P[0][0]+ox+0.5,0.6,-(x.P[0][1]+oy)+0.2);group.add(k);}
-  scene.add(group);const cx=(mnx+mxx)/2,cy=(mny+mxy)/2,sz=Math.max(mxx-mnx,mxy-mny,4);controls.target.set(cx,0,-cy);camera.position.set(cx+sz*0.6,sz*1.1,-cy+sz*1.0);
+  scene.add(group);const cx=(mnx+mxx)/2,cy=(mny+mxy)/2,sz=Math.max(mxx-mnx,mxy-mny,4);controls.target.set(cx,0,-cy);camera.position.set(cx+sz*0.35,sz*1.45,-cy+sz*1.25);
   document.getElementById("leg3d").innerHTML=mode==="pipes"?'<span><i style="background:#e5484d"></i>Issiq</span><span><i style="background:#2f80ed"></i>Qaytish</span><span><i style="background:#c9a77c;height:6px"></i>Tashqi devor</span><span><i style="background:#9aa4ad;height:6px"></i>Kollektor</span>':'<span><i style="background:hsl(223,75%,55%);height:6px"></i>18°C</span><span><i style="background:hsl(110,75%,55%);height:6px"></i>24°C</span><span><i style="background:hsl(0,75%,55%);height:6px"></i>30°C pol yuzasi</span>';}
 window.App.r3d=H=>build(H);
 window.App.show3d=()=>{if(!started)init();size();build(window.App.H);};
