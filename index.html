@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Santexnik Smeta</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:var(--tg-theme-bg-color,#f4f5f7);--card:var(--tg-theme-secondary-bg-color,#ffffff);--tx:var(--tg-theme-text-color,#15171a);--mut:var(--tg-theme-hint-color,#7a8089);--ac:var(--tg-theme-button-color,#1f7ae0);--act:var(--tg-theme-button-text-color,#fff);--hot:#e5484d;--cold:#2f80ed;--ok:#1a9e5c;--warn:#d98a00;--ln:rgba(127,127,127,.22)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);font-size:15px;padding-bottom:72px}
+header{padding:14px 16px 6px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:19px;margin:0;font-weight:600}
+header small{color:var(--mut);font-size:12px}
+.page{display:none;padding:0 12px}.page.on{display:block}
+.card{background:var(--card);border-radius:14px;padding:14px;margin:10px 0;border:1px solid var(--ln)}
+.card h3{margin:0 0 8px;font-size:16px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+label{font-size:12px;color:var(--mut);display:block}
+input,select{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);font-size:15px;margin-top:3px}
+input[type=checkbox]{width:auto;margin:0 6px 0 0}
+.chk{display:flex;align-items:center;font-size:13px;color:var(--tx);margin:4px 0}
+button{border:0;border-radius:10px;padding:11px 14px;font-size:15px;font-weight:600;background:var(--ac);color:var(--act);cursor:pointer}
+button.sec{background:transparent;color:var(--ac);border:1px solid var(--ac)}
+button.sm{padding:6px 10px;font-size:13px}
+button.del{background:transparent;color:var(--hot);border:1px solid var(--hot)}
+.row{display:flex;gap:8px;align-items:center}
+.stat{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--ln);font-size:14px}
+.stat:last-child{border:0}.stat b{font-weight:600}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;background:rgba(31,122,224,.12);color:var(--ac);margin-right:4px}
+.warn{background:rgba(217,138,0,.12);color:var(--warn);border-radius:10px;padding:8px 10px;font-size:13px;margin:6px 0}
+.err{background:rgba(229,72,77,.12);color:var(--hot);border-radius:10px;padding:8px 10px;font-size:13px;margin:6px 0}
+.okb{background:rgba(26,158,92,.12);color:var(--ok);border-radius:10px;padding:8px 10px;font-size:13px;margin:6px 0}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--ln);padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:10}
+nav a{flex:1;text-align:center;font-size:12px;color:var(--mut);padding:6px 0;text-decoration:none}
+nav a.on{color:var(--ac);font-weight:600}
+nav a span{display:block;font-size:20px;line-height:22px}
+#v3d{width:100%;height:62vh;border-radius:14px;overflow:hidden;background:#dfe7ef;touch-action:none}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--ln);text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:500;font-size:12px}
+td.n{text-align:right;white-space:nowrap}
+.tabs{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}
+.tabs button{flex:1;background:var(--card);color:var(--tx);border:1px solid var(--ln);font-size:13px;padding:9px 6px}
+.tabs button.on{background:var(--ac);color:var(--act);border-color:var(--ac)}
+.svgwrap{background:var(--bg);border-radius:10px;margin-top:8px}
+.legend{font-size:12px;color:var(--mut);display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:4px}
+.total{font-size:20px;font-weight:700}
+details summary{cursor:pointer;font-size:14px;color:var(--ac);margin-top:6px}
+.mut{color:var(--mut);font-size:12px}
+</style>
+</head>
+<body>
+<header><div><h1>Santexnik Smeta</h1><small>Issiq pol · radiator · qozonxona</small></div><button class="sec sm" onclick="App.share()">Ulashish</button></header>
+
+<section class="page on" id="p-rooms">
+  <div id="roomList"></div>
+  <div class="row" style="margin:10px 0 4px"><button style="flex:1" onclick="App.addRoom()">+ Xona qo'shish</button></div>
+  <div class="card"><h3>Uy bo'yicha jami</h3><div id="houseSum"></div></div>
+</section>
+
+<section class="page" id="p-3d">
+  <div class="tabs"><button class="on" data-m="pipes" onclick="App.mode3d(this)">Quvurlar</button><button data-m="heat" onclick="App.mode3d(this)">Issiqlik xaritasi</button></div>
+  <div id="v3d"></div>
+  <div class="legend" id="leg3d"></div>
+  <p class="mut">Ikki barmoq bilan kattalashtiring, bitta barmoq bilan aylantiring. Xonalar joyini xona kartasidagi "Joylashuv X / Y" orqali o'zgartirasiz.</p>
+</section>
+
+<section class="page" id="p-smeta">
+  <div class="tabs" id="varTabs"></div>
+  <div class="card"><h3>Byudjet</h3><div class="row"><input id="budget" inputmode="numeric" placeholder="Masalan 25 000 000" oninput="App.budget()"><span class="mut">so'm</span></div><div id="budgetRes"></div></div>
+  <div id="smetaOut"></div>
+  <p class="mut">Narxlar namuna sifatida qo'yilgan. Haqiqiy narxlarni "Sozlamalar → Narxlar" bo'limida kiriting, hammasi qayta hisoblanadi.</p>
+</section>
+
+<section class="page" id="p-set">
+  <div class="card"><h3>Iqlim va harorat</h3>
+    <div class="grid">
+      <div><label>Tashqi hisobiy harorat, °C</label><input data-s="tOut" inputmode="decimal"></div>
+      <div><label>Oila a'zolari (boyler uchun)</label><input data-s="people" inputmode="numeric"></div>
+      <div><label>Issiq pol: kirish, °C</label><input data-s="tsF" inputmode="decimal"></div>
+      <div><label>Issiq pol: qaytish, °C</label><input data-s="trF" inputmode="decimal"></div>
+      <div><label>Radiator: kirish, °C</label><input data-s="tsR" inputmode="decimal"></div>
+      <div><label>Radiator: qaytish, °C</label><input data-s="trR" inputmode="decimal"></div>
+    </div></div>
+  <div class="card"><h3>Uy konstruksiyasi</h3>
+    <div class="grid">
+      <div><label>Devor</label><select data-s="wall"><option value="gisht38">G'isht 38 sm</option><option value="gisht51">G'isht 51 sm</option><option value="blok30">Gazoblok 30 sm</option><option value="gishtIzol">G'isht + 5 sm izolyatsiya</option><option value="xom">Paxsa / xom g'isht</option></select></div>
+      <div><label>Deraza</label><select data-s="win"><option value="pl2">Plastik, 2 oynali</option><option value="pl3">Plastik, 3 oynali</option><option value="yog">Yog'och, eski</option></select></div>
+      <div><label>Tom (yuqori qavat ustida)</label><select data-s="roof"><option value="izol">Izolyatsiyali</option><option value="noizol">Izolyatsiyasiz</option></select></div>
+      <div><label>Pol ostida</label><select data-s="floor"><option value="izol">Penoplast 5 sm</option><option value="noizol">Izolyatsiyasiz</option></select></div>
+    </div></div>
+  <div class="card"><h3>Issiq pol</h3>
+    <div class="grid">
+      <div><label>Quvur</label><select data-s="pipe"><option value="16">PEX/PE-RT 16×2</option><option value="20">PEX 20×2</option></select></div>
+      <div><label>Kontur maks. uzunligi, m</label><input data-s="maxLoop" inputmode="numeric"></div>
+      <div><label>Devordan chekinish, sm</label><input data-s="edge" inputmode="numeric"></div>
+      <div><label>Styajka qalinligi (jami), sm</label><input data-s="screed" inputmode="decimal"></div>
+      <div><label>Radiator seksiyasi ΔT70, Vt</label><input data-s="q70" inputmode="numeric"></div>
+      <div><label>Pol notekisligi zaxirasi, %</label><input data-s="screedRes" inputmode="numeric"></div>
+    </div></div>
+  <div class="card"><h3>Narxlar (so'm)</h3><div id="priceList" class="grid"></div></div>
+  <div class="card"><button class="del" style="width:100%" onclick="App.reset()">Loyihani tozalash</button></div>
+</section>
+
+<nav>
+  <a href="#" class="on" data-p="rooms"><span>▦</span>Xonalar</a>
+  <a href="#" data-p="3d"><span>◈</span>3D</a>
+  <a href="#" data-p="smeta"><span>₴</span>Smeta</a>
+  <a href="#" data-p="set"><span>⚙</span>Sozlamalar</a>
+</nav>
+
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+
+<script>
+const tg = window.Telegram && Telegram.WebApp; if (tg) { tg.ready(); tg.expand(); }
+
+/* ---------- ma'lumot ---------- */
+const U = {
+  wall:{gisht38:1.45,gisht51:1.15,blok30:0.45,gishtIzol:0.5,xom:1.3},
+  win:{pl2:2.7,pl3:1.6,yog:3.0},
+  roof:{izol:0.35,noizol:1.1},
+  floor:{izol:0.35,noizol:0.9}
+};
+/* EN 1264 yondashuvi: q = KH * dθH. KH — taxminiy, styajka ~45 mm quvur ustida */
+const KH = {kafel:{10:7.2,15:6.2,20:5.4,25:4.7,30:4.1},laminat:{10:4.8,15:4.3,20:3.9,25:3.5,30:3.2},linoleum:{10:6.0,15:5.3,20:4.7,25:4.2,30:3.7}};
+const ROOMTYPE = {yashash:{n:"Yashash xonasi",t:20,fmax:29},yotoq:{n:"Yotoqxona",t:20,fmax:29},oshxona:{n:"Oshxona",t:18,fmax:29},hammom:{n:"Hammom / dush",t:25,fmax:33},koridor:{n:"Koridor",t:18,fmax:29}};
+const PRICE_DEF = {
+  pipe16:[9000,"Issiq pol quvuri 16×2, m"],pipe20:[12000,"Issiq pol quvuri 20×2, m"],eps:[45000,"Penoplast plita, m²"],plyonka:[4000,"Polietilen plyonka, m²"],damper:[3000,"Demfer lenta, m"],setka:[25000,"Armatura setka, m²"],xomut:[300,"Xomut / klips, dona"],
+  cement:[65000,"Sement, 50 kg qop"],qum:[180000,"Qum, m³"],
+  kollBase:[350000,"Kollektor (asosi)"],kollOut:[120000,"Kollektor, har chiqish"],evro:[25000,"Evrokonus, dona"],shkaf:[450000,"Kollektor shkafi"],kran:[60000,"Sharli kran, dona"],
+  radSec:[110000,"Radiator seksiyasi"],kron:[15000,"Kronshteyn, dona"],mayev:[20000,"Mayevskiy krani"],radKran:[80000,"Radiator krani, dona"],radKomp:[40000,"Probka/zaglushka to'plami"],ppr:[10000,"PPR quvur 20, m"],fit:[8000,"Fiting (burchak, troynik)"],
+  kot2:[9000000,"Ikki konturli osma kotyol"],kot1:[7500000,"Bir konturli osma kotyol"],kotPol:[18000000,"Polga qo'yiladigan kotyol"],
+  bkn:[5500000,"Boyler (BKN)"],v3:[900000,"3 yo'lli klapan"],nasos:[1200000,"Sirkulyatsiya nasosi"],uzel:[2500000,"Aralashtirish uzeli"],
+  bak:[600000,"Kengayish baki"],xavf:[350000,"Xavfsizlik guruhi"],filtr:[120000,"Setkali filtr"],magfiltr:[700000,"Magnitli filtr"],
+  gidro:[1500000,"Gidrostrelka"],taqsim:[1800000,"Taqsimlash kollektori"],termo:[400000,"Xona termostati"],avto:[2500000,"Avtomatika / ob-havo datchigi"]
+};
+const SET_DEF = {tOut:-15,people:4,tsF:45,trF:35,tsR:70,trR:55,wall:"gisht38",win:"pl2",roof:"izol",floor:"izol",pipe:"16",maxLoop:90,edge:10,screed:7,q70:180,screedRes:7};
+
+function demo(){return [
+  room("Mehmonxona","yashash",[5,4.02,5,4.2],0,2.8,[true,true,false,false],3,"ikkalasi","laminat",15,0,0),
+  room("Yotoqxona","yotoq",[4,3.5,4,3.5],0,2.8,[true,false,false,true],1.8,"pol","laminat",15,5.4,0),
+  room("Hammom","hammom",[2.5,2,2.5,2],0,2.6,[false,false,true,false],0.5,"ikkalasi","kafel",10,5.4,3.7)
+];}
+function room(name,type,s,diag,h,ext,win,heat,cover,step,x,y){return {id:Math.random().toString(36).slice(2,8),name,type,a:s[0],b:s[1],c:s[2],d:s[3],diag,diag2:0,h,ext,win,heat,cover,step,dist:3,x,y,top:true,ground:true,open:false};}
+
+let S = load();
+function load(){try{const j=JSON.parse(localStorage.getItem("usta_v1"));if(j&&j.rooms)return fill(j);}catch(e){}return fill({rooms:demo()});}
+function fill(j){j.set=Object.assign({},SET_DEF,j.set||{});j.price=Object.assign({},Object.fromEntries(Object.entries(PRICE_DEF).map(([k,v])=>[k,v[0]])),j.price||{});j.variant=j.variant||"orta";return j;}
+function save(){localStorage.setItem("usta_v1",JSON.stringify(S));}
+const num=v=>{const n=parseFloat(String(v).replace(",","."));return isFinite(n)?n:0;};
+const fmt=(n,d=0)=>n.toLocaleString("ru-RU",{minimumFractionDigits:d,maximumFractionDigits:d});
+
+/* ---------- geometriya ---------- */
+const sub=(p,q)=>[p[0]-q[0],p[1]-q[1]],add=(p,q)=>[p[0]+q[0],p[1]+q[1]],mul=(p,k)=>[p[0]*k,p[1]*k],len=p=>Math.hypot(p[0],p[1]),cross=(p,q)=>p[0]*q[1]-p[1]*q[0],lerp=(p,q,t)=>[p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t];
+function circ(p0,r0,p1,r1){const d=len(sub(p1,p0));if(d>r0+r1+1e-9||d<Math.abs(r0-r1)-1e-9||d===0)return null;const a=(r0*r0-r1*r1+d*d)/(2*d),h=Math.sqrt(Math.max(0,r0*r0-a*a));const m=add(p0,mul(sub(p1,p0),a/d));const ox=-(p1[1]-p0[1])*h/d,oy=(p1[0]-p0[0])*h/d;return [[m[0]+ox,m[1]+oy],[m[0]-ox,m[1]-oy]];}
+function area(P){let s=0;for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length];s+=p[0]*q[1]-q[0]*p[1];}return s/2;}
+function perim(P){let s=0;for(let i=0;i<P.length;i++)s+=len(sub(P[(i+1)%P.length],P[i]));return s;}
+function plen(L){let s=0;for(let i=1;i<L.length;i++)s+=len(sub(L[i],L[i-1]));return s;}
+function lineX(p1,d1,p2,d2){const den=cross(d1,d2);if(Math.abs(den)<1e-12)return null;const t=cross(sub(p2,p1),d2)/den;return add(p1,mul(d1,t));}
+/* A(0,0)-B pastki devor (a), B-C o'ng (b), C-D yuqori (c), D-A chap (d). Diagonal AC bo'lsa shakl aniq, bo'lmasa A burchak 90° */
+function shape(r){
+  const a=num(r.a),b=num(r.b),c=num(r.c),d=num(r.d),dg=num(r.diag);
+  if(a<=0||b<=0||c<=0||d<=0)return {err:"Hamma devor o'lchamini kiriting"};
+  const A=[0,0],B=[a,0];let C,D;
+  if(dg>0){const x=circ(A,dg,B,b);if(!x)return {err:"Diagonal devorlarga mos emas (B–C, A–C)"};C=x[0][1]>=x[1][1]?x[0]:x[1];
+    const y=circ(A,d,C,c);if(!y)return {err:"Diagonal devorlarga mos emas (C–D, D–A)"};D=cross(C,y[0])>cross(C,y[1])?y[0]:y[1];}
+  else{D=[0,d];const x=circ(B,b,D,c);if(!x)return {err:"Devor o'lchamlari bir-biriga mos emas"};C=(x[0][0]+x[0][1])>(x[1][0]+x[1][1])?x[0]:x[1];}
+  const P=[A,B,C,D];if(area(P)<=0)return {err:"Shakl noto'g'ri chiqdi, o'lchamlarni tekshiring"};
+  const out={P};const bd=len(sub(D,B));out.bd=bd;
+  if(num(r.diag2)>0){const dif=Math.abs(bd-num(r.diag2));if(dif>0.03)out.warn=`Ikkinchi diagonal (B–D) hisobdan ${fmt(dif*100)} sm farq qiladi — qayta o'lchang`;}
+  return out;}
+function inset(P,dist){const n=P.length,L=[];for(let i=0;i<n;i++){const p=P[i],q=P[(i+1)%n],dv=sub(q,p),l=len(dv);const nn=[-dv[1]/l,dv[0]/l];L.push([add(p,mul(nn,dist)),dv]);}
+  const Q=[];for(let i=0;i<n;i++){const a=L[(i+n-1)%n],b=L[i];const x=lineX(a[0],a[1],b[0],b[1]);if(!x)return null;Q.push(x);}
+  if(area(Q)<=1e-4)return null;for(let i=0;i<n;i++){const d0=sub(P[(i+1)%n],P[i]),d1=sub(Q[(i+1)%n],Q[i]);if(d0[0]*d1[0]+d0[1]*d1[1]<=0)return null;if(len(d1)<0.05)return null;}return Q;}
+/* ikki qatorli spiral ("ulitka"): issiq quvur juft halqalarda, qaytish toq halqalarda, kesishmasdan */
+function spiral(Z,e0,s){const R=[];for(let k=0;k<200;k++){const q=inset(Z,e0+k*s);if(!q)break;R.push(q);}
+  if(R.length<2)return null;
+  const edge=(Q,i)=>[Q[i],sub(Q[(i+1)%4],Q[i])];
+  function path(st){const pts=[R[st][0]];for(let k=st;k<R.length;k+=2){if(k>st){const e3=edge(R[k-2],3),e0b=edge(R[k],0);const x=lineX(e3[0],e3[1],e0b[0],e0b[1]);pts.push(x||R[k][0]);}pts.push(R[k][1],R[k][2],R[k][3]);}return pts;}
+  const sup=path(0),ret=path(1);return {sup,ret,link:[sup[sup.length-1],ret[ret.length-1]]};}
+
+/* ---------- hisob ---------- */
+function calcRoom(r,st){
+  const sh=shape(r);const res={r,warns:[]};if(sh.err){res.err=sh.err;return res;}
+  if(sh.warn)res.warns.push(sh.warn);
+  const P=sh.P,A=area(P),per=perim(P),h=num(r.h)||2.7,T=ROOMTYPE[r.type]||ROOMTYPE.yashash,ti=T.t,dT=ti-num(st.tOut);
+  const sides=[num(r.a),num(r.b),num(r.c),num(r.d)];
+  let extA=0;sides.forEach((L,i)=>{if(r.ext[i])extA+=L*h;});const win=Math.min(num(r.win),extA);
+  const Qw=(extA-win)*U.wall[st.wall]*dT,Qwin=win*U.win[st.win]*dT,Qroof=r.top?A*U.roof[st.roof]*dT:0,Qfl=r.ground?A*U.floor[st.floor]*(ti-5):0,Qinf=0.34*0.5*A*h*dT;
+  const Q=(Qw+Qwin+Qroof+Qfl+Qinf)*1.1;
+  Object.assign(res,{P,A,per,h,ti,Q,parts:{Qw,Qwin,Qroof,Qfl,Qinf},sides});
+  const usePol=r.heat==="pol"||r.heat==="ikkalasi",useRad=r.heat==="radiator"||r.heat==="ikkalasi";
+  res.loops=[];res.pipe=0;res.Qf=0;res.tF=ti;res.Aheat=0;
+  if(usePol){
+    const s=(num(r.step)||15)/100,e0=num(st.edge)/100,maxL=num(st.maxLoop)||90,dist=num(r.dist);let n=1,zones,best;
+    for(n=1;n<=10;n++){zones=[];let ok=true,mx=0;for(let i=0;i<n;i++){const Z=[lerp(P[0],P[1],i/n),lerp(P[0],P[1],(i+1)/n),lerp(P[3],P[2],(i+1)/n),lerp(P[3],P[2],i/n)];const sp=spiral(Z,e0,s);if(!sp){ok=false;break;}const L=plen(sp.sup)+plen(sp.ret)+plen(sp.link)+2*dist;mx=Math.max(mx,L);zones.push({Z,sp,L});}
+      if(!ok){res.warns.push("Xona juda kichik: konturni joylashtirib bo'lmadi");zones=best||[];break;}best=zones;if(mx<=maxL)break;}
+    res.loops=zones;res.pipe=zones.reduce((t,z)=>t+z.L,0);
+    res.Aheat=zones.reduce((t,z)=>{const q=inset(z.Z,e0);return t+(q?area(q):0);},0);
+    const ts=num(st.tsF),tr=num(st.trF);
+    if(tr<=ti||ts<=tr){res.warns.push("Issiq pol harorati noto'g'ri: kirish > qaytish > xona harorati bo'lishi kerak");}
+    else{const dth=(ts-tr)/Math.log((ts-ti)/(tr-ti));const stp=Math.min(30,Math.max(10,Math.round((num(r.step)||15)/5)*5));const kh=(KH[r.cover]||KH.laminat)[stp]||KH.laminat[15];
+      let q=kh*dth,tF=ti+Math.pow(q/8.92,1/1.1);if(tF>T.fmax){tF=T.fmax;q=8.92*Math.pow(T.fmax-ti,1.1);res.warns.push(`Pol yuzasi ${T.fmax}°C chegaraga yetdi — suv haroratini pasaytirsa ham bo'ladi`);}
+      res.q=q;res.tF=tF;res.Qf=q*res.Aheat;}
+  }
+  res.need=Math.max(0,res.Q-res.Qf);res.sec=0;res.rads=0;
+  if(useRad&&res.need>0){const dtr=(num(st.tsR)+num(st.trR))/2-ti;const qs=num(st.q70)*Math.pow(Math.max(dtr,1)/70,1.3);res.qs=qs;res.sec=Math.ceil(res.need/qs);res.rads=Math.max(1,Math.ceil(res.sec/12));}
+  res.cover=(res.Qf+(res.sec*(res.qs||0)))/res.Q;
+  if(r.heat==="pol"&&res.Qf<res.Q*0.97)res.warns.push(`Issiq pol yo'qotishning ${fmt(res.Qf/res.Q*100)}% ini qoplaydi. Qadamni kichraytiring yoki radiator qo'shing`);
+  return res;}
+
+function calcHouse(){
+  const st=S.set,rs=S.rooms.map(r=>calcRoom(r,st)),ok=rs.filter(x=>!x.err);
+  const H={rs,ok,A:0,Q:0,pipe:0,loops:0,sec:0,rads:0,per:0,hasPol:false,hasRad:false};
+  ok.forEach(x=>{H.A+=x.A;H.Q+=x.Q;H.pipe+=x.pipe;H.loops+=x.loops.length;H.sec+=x.sec;H.rads+=x.rads;if(x.loops.length){H.per+=x.per;H.Apol=(H.Apol||0)+x.A;H.hasPol=true;}if(x.sec)H.hasRad=true;});
+  H.Apol=H.Apol||0;
+  const stdP=[12,14,18,24,28,32,35,40,50,60,80,100];H.kw=stdP.find(p=>p>=H.Q/1000*1.15)||Math.ceil(H.Q/1000*1.15);
+  const pipeL=1.05*H.pipe,pprL=ok.reduce((t,x)=>t+x.rads*2*num(x.r.dist)*1.15,0);
+  H.vol=pipeL*0.113+pprL*0.137+H.sec*0.42+10;
+  const stdB=[8,12,18,24,35,50,80,100];H.bak=stdB.find(v=>v>=H.vol*0.1)||100;
+  const stdV=[80,100,150,200,300];H.bkn=stdV.find(v=>v>=num(st.people)*40)||300;
+  H.pipeL=pipeL;H.pprL=pprL;
+  return H;}
+
+/* ---------- smeta ---------- */
+const VARS={ekonom:"Ekonom",orta:"O'rta",premium:"Premium"};
+function smeta(H,v){
+  const st=S.set,pr=S.price,L=[];const it=(cat,key,qty,unit,name)=>{if(qty>0)L.push({cat,key,qty,unit,name:name||PRICE_DEF[key][1].split(",")[0],price:pr[key]});};
+  const warn=[];
+  if(H.hasPol){const pk=st.pipe==="20"?"pipe20":"pipe16";
+    it("Issiq pol",pk,Math.ceil(H.pipeL),"m");it("Issiq pol","eps",Math.ceil(H.Apol*1.07),"m²");it("Issiq pol","plyonka",Math.ceil(H.Apol*1.15),"m²");
+    it("Issiq pol","damper",Math.ceil(H.per*1.05),"m");it("Issiq pol","setka",Math.ceil(H.Apol*1.1),"m²");it("Issiq pol","xomut",Math.ceil(H.pipe*2.5),"dona");
+    const per=12,nK=Math.ceil(H.loops/per);let left=H.loops;
+    for(let i=0;i<nK;i++){const outs=Math.ceil(left/(nK-i));left-=outs;
+      L.push({cat:"Issiq pol",key:"kollOut",qty:1,unit:"dona",name:`Kollektor ${outs} chiqishli (rasxodomerli)`,price:pr.kollBase+pr.kollOut*outs});}
+    it("Issiq pol","evro",H.loops*2,"dona");it("Issiq pol","shkaf",nK,"dona");it("Issiq pol","kran",nK*2,"dona","Sharli kran (kollektor)");
+    const m3=H.Apol*num(st.screed)/100*(1+num(st.screedRes)/100);H.m3=m3;
+    it("Styajka","cement",Math.ceil(m3*8),"qop");it("Styajka","qum",Math.ceil(m3*1.15*10)/10,"m³");}
+  if(H.hasRad){it("Radiatorlar","radSec",H.sec,"seksiya");it("Radiatorlar","kron",H.rads*3,"dona");it("Radiatorlar","mayev",H.rads,"dona");it("Radiatorlar","radKran",H.rads*2,"dona");it("Radiatorlar","radKomp",H.rads,"to'plam");
+    it("Radiatorlar","ppr",Math.ceil(H.pprL),"m");it("Radiatorlar","fit",Math.ceil(H.pprL/1.5),"dona","Fitinglar (taxminiy)");}
+  const both=H.hasPol&&H.hasRad,kw=H.kw,Q="Qozonxona";
+  if(v==="ekonom"){it(Q,"kot2",1,"dona",`Ikki konturli osma kotyol ${kw} kVt`);if(kw>35)warn.push("Ikki konturli osma kotyol odatda 35 kVt gacha bo'ladi — bu uyga O'rta yoki Premium variant kerak");
+    if(H.bak>8)it(Q,"bak",1,"dona",`Qo'shimcha kengayish baki ${H.bak} L`);it(Q,"filtr",1,"dona");it(Q,"kran",4,"dona","Sharli kran 3/4\"");
+    if(both)it(Q,"uzel",1,"dona","Aralashtirish uzeli (issiq pol)");else if(H.hasPol)warn.push("Faqat issiq pol: kotyol haroratini 45°C dan oshirmang, aks holda pol qizib ketadi");}
+  if(v==="orta"){it(Q,"kot1",1,"dona",`Bir konturli osma kotyol ${kw} kVt`);it(Q,"bkn",1,"dona",`Boyler (BKN) ${H.bkn} L`);it(Q,"v3",1,"dona");
+    if(H.hasPol){it(Q,"uzel",1,"dona","Aralashtirish uzeli (issiq pol)");it(Q,"nasos",1,"dona","Nasos (issiq pol)");}
+    it(Q,"bak",1,"dona",`Kengayish baki ${H.bak} L`);it(Q,"xavf",1,"dona");it(Q,"filtr",1,"dona");it(Q,"kran",6,"dona","Sharli kran 3/4\"");}
+  if(v==="premium"){it(Q,"kotPol",1,"dona",`Polga qo'yiladigan kotyol ${kw} kVt`);it(Q,"bkn",1,"dona",`Boyler (BKN) ${H.bkn} L`);it(Q,"gidro",1,"dona");it(Q,"taqsim",1,"dona",`Taqsimlash kollektori (${(H.hasPol?1:0)+(H.hasRad?1:0)+1} kontur)`);
+    if(H.hasRad)it(Q,"nasos",1,"dona","Nasos guruhi (radiator)");if(H.hasPol)it(Q,"uzel",1,"dona","Nasos guruhi + aralashtirish (issiq pol)");it(Q,"nasos",1,"dona","Nasos (boyler)");
+    it(Q,"bak",1,"dona",`Kengayish baki ${H.bak} L`);it(Q,"xavf",1,"dona");it(Q,"magfiltr",1,"dona");it(Q,"filtr",1,"dona");it(Q,"termo",H.ok.length,"dona");it(Q,"avto",1,"dona");it(Q,"kran",10,"dona","Sharli kran 3/4\"");}
+  L.forEach(x=>x.sum=x.qty*x.price);const total=L.reduce((t,x)=>t+x.sum,0);return {L,total,warn};}
+
+/* ---------- 2D chizma ---------- */
+function svgRoom(x){if(x.err)return "";const P=x.P;const xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);const mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys);
+  const W=300,pad=34,sc=Math.min((W-2*pad)/(mxx-mnx),(220-2*pad)/(mxy-mny)),Hh=(mxy-mny)*sc+2*pad;
+  const T=p=>[(pad+(p[0]-mnx)*sc).toFixed(1),(Hh-pad-(p[1]-mny)*sc).toFixed(1)];const pl=a=>a.map(p=>T(p).join(",")).join(" ");
+  let g=`<polygon points="${pl(P)}" fill="none" stroke="currentColor" stroke-width="2.2"/>`;
+  P.forEach((p,i)=>{if(x.r.ext[i]){const q=P[(i+1)%4];g+=`<line x1="${T(p)[0]}" y1="${T(p)[1]}" x2="${T(q)[0]}" y2="${T(q)[1]}" stroke="#8a6d3b" stroke-width="5" opacity=".35"/>`;}});
+  x.loops.forEach(z=>{g+=`<polyline points="${pl(z.sp.sup)}" fill="none" stroke="#e5484d" stroke-width="1.4"/><polyline points="${pl(z.sp.ret)}" fill="none" stroke="#2f80ed" stroke-width="1.4"/><polyline points="${pl(z.sp.link)}" fill="none" stroke="#9b59b6" stroke-width="1.4"/>`;});
+  const lab=["a","b","c","d"];P.forEach((p,i)=>{const q=P[(i+1)%4],m=lerp(p,q,.5),dv=sub(q,p),l=len(dv),nn=[dv[1]/l,-dv[0]/l];const t=T(m);const tx=+t[0]+nn[0]*18,ty=+t[1]-nn[1]*14;g+=`<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" font-size="11" text-anchor="middle" dominant-baseline="central" fill="currentColor" opacity=".8">${lab[i]}=${fmt(x.sides[i],2)}</text>`;});
+  return `<div class="svgwrap"><svg viewBox="0 0 ${W} ${Hh.toFixed(0)}" width="100%" style="color:var(--tx)">${g}</svg></div>`;}
+
+/* ---------- UI ---------- */
+const App={};window.App=App;
+function render(){const H=calcHouse();App.H=H;renderRooms(H);renderSum(H);renderSmeta(H);save();if(App.r3d)App.r3d(H);}
+function inp(r,k,lbl,mode="decimal"){return `<div><label>${lbl}</label><input value="${r[k]??""}" inputmode="${mode}" onchange="App.set('${r.id}','${k}',this.value)"></div>`;}
+function renderRooms(H){const el=document.getElementById("roomList");el.innerHTML=H.rs.map(x=>{const r=x.r;
+  const head=`<h3><span>${r.name}</span><span class="row"><span class="pill">${x.err?"—":fmt(x.A,2)+" m²"}</span><button class="sec sm" onclick="App.toggle('${r.id}')">${r.open?"Yopish":"O'lcham"}</button></span></h3>`;
+  let body="";
+  if(x.err)body+=`<div class="err">${x.err}</div>`;else{
+    body+=`<div class="stat"><span>Issiqlik yo'qotish</span><b>${fmt(x.Q)} Vt</b></div>`;
+    if(x.loops.length)body+=`<div class="stat"><span>Issiq pol</span><b>${x.loops.length} kontur · ${x.loops.map(z=>fmt(z.L)).join(" + ")} m</b></div><div class="stat"><span>Pol yuzasi / berishi</span><b>${fmt(x.tF,1)}°C · ${fmt(x.Qf)} Vt</b></div>`;
+    if(x.sec)body+=`<div class="stat"><span>Radiator</span><b>${x.sec} seksiya (${x.rads} dona)</b></div>`;
+    body+=`<div class="stat"><span>Qoplash</span><b style="color:${x.cover>=0.97?"var(--ok)":"var(--warn)"}">${fmt(Math.min(x.cover,9.99)*100)}%</b></div>`;
+    body+=svgRoom(x);if(x.loops.length)body+=`<div class="legend"><span><i style="background:#e5484d"></i>Issiq (kirish)</span><span><i style="background:#2f80ed"></i>Qaytish</span><span><i style="background:#8a6d3b;opacity:.4;height:5px"></i>Tashqi devor</span></div>`;}
+  x.warns.forEach(w=>body+=`<div class="warn">${w}</div>`);
+  if(r.open){body+=`<div style="margin-top:10px" class="grid">${inp(r,"name","Nomi","text")}<div><label>Turi</label><select onchange="App.set('${r.id}','type',this.value)">${Object.entries(ROOMTYPE).map(([k,v])=>`<option value="${k}" ${r.type===k?"selected":""}>${v.n}</option>`).join("")}</select></div></div>
+    <p class="mut" style="margin:10px 0 4px">Har bir devorni alohida o'lchang (m). a — pastki, b — o'ng, c — yuqori, d — chap. Diagonal A→C shaklni aniq qiladi; B→D bo'lsa tekshiruv uchun.</p>
+    <div class="grid">${inp(r,"a","a (pastki)")}${inp(r,"b","b (o'ng)")}${inp(r,"c","c (yuqori)")}${inp(r,"d","d (chap)")}${inp(r,"diag","Diagonal A→C")}${inp(r,"diag2","Diagonal B→D")}${inp(r,"h","Shift balandligi")}${inp(r,"win","Deraza maydoni, m²")}</div>
+    <label style="margin-top:8px">Tashqi devorlar</label><div class="row" style="flex-wrap:wrap">${["a","b","c","d"].map((s,i)=>`<label class="chk"><input type="checkbox" ${r.ext[i]?"checked":""} onchange="App.ext('${r.id}',${i},this.checked)">${s}</label>`).join("")}
+    <label class="chk"><input type="checkbox" ${r.top?"checked":""} onchange="App.set('${r.id}','top',this.checked)">Ustida tom</label><label class="chk"><input type="checkbox" ${r.ground?"checked":""} onchange="App.set('${r.id}','ground',this.checked)">Ostida yer</label></div>
+    <div class="grid" style="margin-top:6px"><div><label>Isitish</label><select onchange="App.set('${r.id}','heat',this.value)">${[["pol","Issiq pol"],["radiator","Radiator"],["ikkalasi","Ikkalasi"]].map(([k,v])=>`<option value="${k}" ${r.heat===k?"selected":""}>${v}</option>`).join("")}</select></div>
+    <div><label>Pol qoplamasi</label><select onchange="App.set('${r.id}','cover',this.value)">${[["kafel","Kafel / tosh"],["laminat","Laminat / parket"],["linoleum","Linoleum"]].map(([k,v])=>`<option value="${k}" ${r.cover===k?"selected":""}>${v}</option>`).join("")}</select></div>
+    <div><label>Quvur qadami, sm</label><select onchange="App.set('${r.id}','step',this.value)">${[10,15,20,25,30].map(v=>`<option ${num(r.step)===v?"selected":""}>${v}</option>`).join("")}</select></div>${inp(r,"dist","Kollektorgacha, m")}${inp(r,"x","Joylashuv X, m")}${inp(r,"y","Joylashuv Y, m")}</div>
+    <div class="row" style="margin-top:10px"><button class="del sm" onclick="App.del('${r.id}')">Xonani o'chirish</button><button class="sec sm" onclick="App.dup('${r.id}')">Nusxa olish</button></div>`;}
+  return `<div class="card">${head}${body}</div>`;}).join("");}
+function renderSum(H){const el=document.getElementById("houseSum");el.innerHTML=`<div class="stat"><span>Maydon</span><b>${fmt(H.A,2)} m²</b></div><div class="stat"><span>Issiqlik yo'qotish</span><b>${fmt(H.Q/1000,1)} kVt</b></div><div class="stat"><span>Kotyol quvvati (tavsiya)</span><b>${H.kw} kVt</b></div>
+  ${H.hasPol?`<div class="stat"><span>Issiq pol quvuri (+5%)</span><b>${fmt(H.pipeL)} m</b></div><div class="stat"><span>Konturlar / kollektor</span><b>${H.loops} ta / ${Math.ceil(H.loops/12)} dona</b></div><div class="stat"><span>Styajka hajmi</span><b>${fmt(H.Apol*num(S.set.screed)/100*(1+num(S.set.screedRes)/100),2)} m³</b></div>`:""}
+  ${H.hasRad?`<div class="stat"><span>Radiator seksiyalari</span><b>${H.sec} ta (${H.rads} radiator)</b></div>`:""}
+  <div class="stat"><span>Tizimdagi suv / kengayish baki</span><b>${fmt(H.vol)} L / ${H.bak} L</b></div>`;}
+function renderSmeta(H){document.getElementById("varTabs").innerHTML=Object.entries(VARS).map(([k,v])=>`<button class="${S.variant===k?"on":""}" onclick="App.variant('${k}')">${v}<br><small>${fmt(smeta(H,k).total/1e6,1)} mln</small></button>`).join("");
+  const sm=smeta(H,S.variant);const cats=[...new Set(sm.L.map(x=>x.cat))];
+  let h=sm.warn.map(w=>`<div class="warn">${w}</div>`).join("");
+  cats.forEach(c=>{const L=sm.L.filter(x=>x.cat===c),t=L.reduce((s,x)=>s+x.sum,0);h+=`<div class="card"><h3><span>${c}</span><span class="pill">${fmt(t)} so'm</span></h3><table><tr><th>Nomi</th><th class="n">Soni</th><th class="n">Summa</th></tr>${L.map(x=>`<tr><td>${x.name}<div class="mut">${fmt(x.price)} so'm</div></td><td class="n">${fmt(x.qty,x.qty%1?1:0)} ${x.unit}</td><td class="n">${fmt(x.sum)}</td></tr>`).join("")}</table></div>`;});
+  h+=`<div class="card"><div class="stat"><span>Jami (${VARS[S.variant]})</span><span class="total">${fmt(sm.total)} so'm</span></div><p class="mut">Usta haqqi kirmagan. Materiallarga 5–10% zaxira qo'shilgan.</p></div>`;
+  document.getElementById("smetaOut").innerHTML=h;App.budget();}
+App.budget=()=>{const b=num((document.getElementById("budget").value||"").replace(/\s/g,""));const el=document.getElementById("budgetRes");if(!b||!App.H){el.innerHTML="";return;}
+  const t=Object.keys(VARS).map(k=>[k,smeta(App.H,k).total]);const fit=t.filter(([k,v])=>v<=b).sort((a,c)=>c[1]-a[1])[0];
+  el.innerHTML=fit?`<div class="okb">Byudjetga <b>${VARS[fit[0]]}</b> variant sig'adi: ${fmt(fit[1])} so'm, ${fmt(b-fit[1])} so'm qoladi.</div>`:`<div class="err">Eng arzon variant ham ${fmt(Math.min(...t.map(x=>x[1]))-b)} so'm oshib ketadi. Radiator o'rniga issiq pol yoki arzonroq materiallarni ko'rib chiqing.</div>`;};
+function renderSettings(){document.querySelectorAll("[data-s]").forEach(e=>{e.value=S.set[e.dataset.s];e.onchange=()=>{S.set[e.dataset.s]=e.tagName==="SELECT"?e.value:num(e.value);render();};});
+  document.getElementById("priceList").innerHTML=Object.entries(PRICE_DEF).map(([k,v])=>`<div><label>${v[1]}</label><input inputmode="numeric" value="${S.price[k]}" onchange="App.price('${k}',this.value)"></div>`).join("");}
+const R=id=>S.rooms.find(r=>r.id===id);
+App.set=(id,k,v)=>{const r=R(id);r[k]=typeof v==="boolean"||["name","type","heat","cover"].includes(k)?v:num(v);render();};
+App.ext=(id,i,v)=>{R(id).ext[i]=v;render();};
+App.toggle=id=>{const r=R(id);r.open=!r.open;render();};
+App.addRoom=()=>{const mx=S.rooms.reduce((m,r)=>Math.max(m,num(r.x)+num(r.a)),0);const r=room("Xona "+(S.rooms.length+1),"yashash",[4,3.5,4,3.5],0,2.8,[false,false,false,false],0,"pol","laminat",15,mx+0.4,0);r.open=true;S.rooms.push(r);render();};
+App.del=id=>{if(!confirm("Xonani o'chirasizmi?"))return;S.rooms=S.rooms.filter(r=>r.id!==id);render();};
+App.dup=id=>{const r=JSON.parse(JSON.stringify(R(id)));r.id=Math.random().toString(36).slice(2,8);r.name+=" (nusxa)";r.x=num(r.x)+num(r.a)+0.4;S.rooms.push(r);render();};
+App.variant=k=>{S.variant=k;render();};
+App.price=(k,v)=>{S.price[k]=num(String(v).replace(/\s/g,""));render();};
+App.reset=()=>{if(!confirm("Hamma xonalar o'chadi va namuna loyiha qaytadi. Davom etasizmi?"))return;S=fill({rooms:demo()});renderSettings();render();};
+App.share=()=>{const H=App.H,sm=smeta(H,S.variant);let t=`🔧 Smeta (${VARS[S.variant]})\nMaydon: ${fmt(H.A,1)} m² · Yo'qotish: ${fmt(H.Q/1000,1)} kVt · Kotyol: ${H.kw} kVt\n`;
+  H.ok.forEach(x=>{t+=`\n▫️ ${x.r.name} ${fmt(x.A,1)} m²: `+(x.loops.length?`${x.loops.length} kontur (${x.loops.map(z=>fmt(z.L)).join("+")} m)`:"")+(x.sec?` radiator ${x.sec} seks.`:"");});
+  t+="\n";sm.L.forEach(x=>t+=`\n• ${x.name}: ${fmt(x.qty,x.qty%1?1:0)} ${x.unit} — ${fmt(x.sum)}`);t+=`\n\nJAMI: ${fmt(sm.total)} so'm`;
+  if(tg&&tg.openTelegramLink){tg.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent("https://t.me/Santexnik_Smeta_bot")+"&text="+encodeURIComponent(t));}
+  else if(navigator.share)navigator.share({text:t});else{navigator.clipboard&&navigator.clipboard.writeText(t);alert("Smeta nusxalandi");}};
+document.querySelectorAll("nav a").forEach(a=>a.onclick=e=>{e.preventDefault();document.querySelectorAll("nav a").forEach(b=>b.classList.toggle("on",b===a));document.querySelectorAll(".page").forEach(p=>p.classList.toggle("on",p.id==="p-"+a.dataset.p));if(a.dataset.p==="3d"&&App.show3d)App.show3d();});
+renderSettings();render();
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import {OrbitControls} from "three/addons/controls/OrbitControls.js";
+const el=document.getElementById("v3d");let renderer,scene,camera,controls,group,mode="pipes",started=false;
+function init(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));el.appendChild(renderer.domElement);
+  scene=new THREE.Scene();scene.background=new THREE.Color(0xdfe7ef);camera=new THREE.PerspectiveCamera(45,1,0.1,200);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x8899aa,1.1));const d=new THREE.DirectionalLight(0xffffff,1.2);d.position.set(6,12,8);scene.add(d);
+  controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.maxPolarAngle=Math.PI*0.49;
+  const loop=()=>{requestAnimationFrame(loop);controls.update();renderer.render(scene,camera);};loop();
+  new ResizeObserver(size).observe(el);started=true;}
+function size(){const w=el.clientWidth,h=el.clientHeight;if(!w)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
+const mat=c=>new THREE.MeshLambertMaterial({color:c,flatShading:true});
+function heatCol(t){const k=Math.max(0,Math.min(1,(t-18)/(30-18)));return new THREE.Color().setHSL(0.62-0.62*k,0.75,0.55);}
+function tube(pts,ox,oy,y,col){if(pts.length<2)return null;const v=pts.map(p=>new THREE.Vector3(p[0]+ox,y,-(p[1]+oy)));const path=new THREE.CurvePath();let cur=v[0].clone();
+  for(let i=1;i<v.length;i++){const V=v[i];if(i===v.length-1){if(cur.distanceTo(V)>1e-4)path.add(new THREE.LineCurve3(cur,V.clone()));break;}
+    const N=v[i+1],dp=cur.distanceTo(V),dn=V.distanceTo(N);const r=Math.min(0.08,dp*0.45,dn*0.45);if(r<1e-4){continue;}
+    const a=V.clone().add(cur.clone().sub(V).setLength(r)),b=V.clone().add(N.clone().sub(V).setLength(r));if(cur.distanceTo(a)>1e-4)path.add(new THREE.LineCurve3(cur,a));path.add(new THREE.QuadraticBezierCurve3(a,V.clone(),b));cur=b;}
+  if(!path.curves.length)return null;return new THREE.Mesh(new THREE.TubeGeometry(path,Math.min(3000,path.curves.length*6),0.022,5,false),mat(col));}
+function build(H){if(!started)return;if(group)scene.remove(group);group=new THREE.Group();let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
+  H.ok.forEach(x=>{const ox=+x.r.x||0,oy=+x.r.y||0,P=x.P;P.forEach(p=>{mnx=Math.min(mnx,p[0]+ox);mxx=Math.max(mxx,p[0]+ox);mny=Math.min(mny,p[1]+oy);mxy=Math.max(mxy,p[1]+oy);});
+    const sh=new THREE.Shape(P.map(p=>new THREE.Vector2(p[0]+ox,p[1]+oy)));const fg=new THREE.ExtrudeGeometry(sh,{depth:0.08,bevelEnabled:false});fg.rotateX(-Math.PI/2);
+    const floor=new THREE.Mesh(fg,mat(mode==="heat"&&x.loops.length?heatCol(x.tF):(x.loops.length?0xd9d4c7:0xcfcfcf)));group.add(floor);
+    for(let i=0;i<4;i++){const p=P[i],q=P[(i+1)%4],L=Math.hypot(q[0]-p[0],q[1]-p[1]),wh=1.0;const w=new THREE.Mesh(new THREE.BoxGeometry(L+0.12,wh,0.12),mat(x.r.ext[i]?0xc9a77c:0xf2efe8));
+      w.position.set((p[0]+q[0])/2+ox,wh/2,-((p[1]+q[1])/2+oy));w.rotation.y=Math.atan2(q[1]-p[1],q[0]-p[0]);group.add(w);}
+    if(mode==="pipes")x.loops.forEach(z=>{[[z.sp.sup,0xe5484d],[z.sp.ret,0x2f80ed],[z.sp.link,0x9b59b6]].forEach(([pts,c])=>{const m=tube(pts,ox,oy,0.11,c);if(m)group.add(m);});});
+    if(x.sec){let wi=x.r.ext.findIndex(e=>e);if(wi<0)wi=0;const p=P[wi],q=P[(wi+1)%4];const per=Math.ceil(x.sec/x.rads);
+      for(let k=0;k<x.rads;k++){const t=(k+1)/(x.rads+1),m=[p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t],dv=[q[0]-p[0],q[1]-p[1]],l=Math.hypot(...dv),n=[-dv[1]/l,dv[0]/l];
+        const rg=new THREE.Group();for(let s=0;s<per;s++){const sec=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.58,0.09),mat(0xffffff));sec.position.x=(s-(per-1)/2)*0.08;rg.add(sec);}
+        rg.position.set(m[0]+n[0]*0.15+ox,0.42,-(m[1]+n[1]*0.15+oy));rg.rotation.y=Math.atan2(dv[1],dv[0]);group.add(rg);}}
+  });
+  if(H.hasPol&&H.ok.length){const x=H.ok.find(r=>r.loops.length);const ox=+x.r.x||0,oy=+x.r.y||0;const k=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.7,0.14),mat(0x9aa4ad));k.add(body);
+    const bar1=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.5,8),mat(0xe5484d));bar1.rotation.z=Math.PI/2;bar1.position.set(0,0.15,0.09);k.add(bar1);const bar2=bar1.clone();bar2.material=mat(0x2f80ed);bar2.position.y=-0.1;k.add(bar2);
+    k.position.set(x.P[0][0]+ox+0.5,0.6,-(x.P[0][1]+oy)+0.2);group.add(k);}
+  scene.add(group);const cx=(mnx+mxx)/2,cy=(mny+mxy)/2,sz=Math.max(mxx-mnx,mxy-mny,4);controls.target.set(cx,0,-cy);camera.position.set(cx+sz*0.6,sz*1.1,-cy+sz*1.0);
+  document.getElementById("leg3d").innerHTML=mode==="pipes"?'<span><i style="background:#e5484d"></i>Issiq</span><span><i style="background:#2f80ed"></i>Qaytish</span><span><i style="background:#c9a77c;height:6px"></i>Tashqi devor</span><span><i style="background:#9aa4ad;height:6px"></i>Kollektor</span>':'<span><i style="background:hsl(223,75%,55%);height:6px"></i>18°C</span><span><i style="background:hsl(110,75%,55%);height:6px"></i>24°C</span><span><i style="background:hsl(0,75%,55%);height:6px"></i>30°C pol yuzasi</span>';}
+window.App.r3d=H=>build(H);
+window.App.show3d=()=>{if(!started)init();size();build(window.App.H);};
+window.App.mode3d=b=>{document.querySelectorAll("#p-3d .tabs button").forEach(x=>x.classList.toggle("on",x===b));mode=b.dataset.m;build(window.App.H);};
+</script>
+</body>
+</html>
