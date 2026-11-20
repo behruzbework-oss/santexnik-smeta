@@ -74,6 +74,55 @@ svg text{font-family:inherit}
 .cnt{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--ln)}.cnt:last-child{border:0}.cnt span{font-size:16px}.cnt .stp{gap:6px}.cnt .stp button{width:44px;height:44px;font-size:22px}.cnt .stp div{min-width:34px;font-size:20px;flex:0}
 .rec{border-left:5px solid var(--ac);border-radius:0 12px 12px 0;background:#fff;padding:12px 14px;margin-bottom:10px;border-top:1px solid var(--ln);border-right:1px solid var(--ln);border-bottom:1px solid var(--ln)}.rec b{display:block;font-size:17px;margin-bottom:4px}.rec p{margin:0;font-size:15px;color:var(--mut)}.rec .tag{display:inline-block;font-size:13px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--okb);color:var(--ok);margin-top:6px}
 .sec2{font-size:14px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin:16px 2px 8px}
+
+/* ===== minimal + bento ===== */
+:root{--bg:#f2f2f0;--card:#fff;--tx:#0f1115;--mut:#80858d;--ac:#0f1115;--act:#fff;--acs:#0f1115;--ln:#ebebe8;--r:22px}
+html,body{font-family:"Inter",-apple-system,"SF Pro Text","Segoe UI",Roboto,Arial,sans-serif;font-size:16px;letter-spacing:-.005em}
+header{background:rgba(242,242,240,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:0;min-height:60px;padding:10px 14px}
+header h1{font-size:21px;font-weight:800;letter-spacing:-.02em}
+header .sub{font-size:13px}
+.ib{border:0;background:#fff;border-radius:14px;min-width:44px;height:44px;font-size:22px}
+#prog{display:none}
+main{padding:6px 14px 14px}
+h2{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.lead{font-size:15px}
+.card{border:0;border-radius:var(--r);padding:16px;box-shadow:0 1px 2px rgba(15,17,21,.04)}
+.card h3{font-size:16px;font-weight:700}
+.opt{border:1px solid var(--ln);border-radius:16px;min-height:54px;font-size:15px;background:#fafaf8}
+.opt.on{background:var(--tx);border-color:var(--tx);color:#fff}.opt.on small{color:#c9ccd1}
+.btn{border-radius:16px;min-height:54px;font-size:17px;background:var(--tx)}
+.btn.sec{background:#fff;color:var(--tx);border:1px solid var(--ln)}
+.btn.grey{background:#fff;color:var(--tx)}
+footer{background:rgba(242,242,240,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:0}
+input.big{border:1px solid var(--ln);border-radius:14px;height:52px;font-size:18px;background:#fafaf8}
+input.big:focus{border-color:var(--tx)}
+.tabs button{border:0;border-radius:999px;min-height:42px;font-size:14px;background:#fff}.tabs button.on{background:var(--tx);color:#fff}
+.fl button{border:0;background:#fff}.fl button.on{background:var(--tx);color:#fff}
+.stp button{border:1px solid var(--ln);border-radius:14px;background:#fafaf8}
+.vc{border:1px solid var(--ln);border-radius:18px}.vc.on{background:var(--tx);color:#fff;border-color:var(--tx)}.vc.on .hint{color:#c9ccd1!important}
+.tile{border:0;border-radius:18px}
+.msg{border-radius:16px;font-size:15px}
+.pc{border-radius:var(--r)}
+.bento{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+@media(min-width:720px){.bento{grid-template-columns:repeat(4,1fr)}}
+.bt{background:#fff;border-radius:var(--r);padding:16px;min-height:118px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;box-shadow:0 1px 2px rgba(15,17,21,.04);cursor:pointer;transition:transform .12s}
+.bt:active{transform:scale(.98)}
+.bt.w2{grid-column:span 2}.bt.h2{grid-row:span 2}
+.bt .k{font-size:13px;color:var(--mut);font-weight:600}
+.bt .v{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+.bt .v small{font-size:15px;font-weight:700;color:var(--mut);margin-left:3px}
+.bt .s{font-size:13px;color:var(--mut);line-height:1.35}
+.bt .go{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;background:#f2f2f0;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--tx)}
+.bt.dark{background:var(--tx);color:#fff}.bt.dark .k,.bt.dark .s{color:#9da3ab}.bt.dark .go{background:#24272d;color:#fff}
+.bt.hot{background:#fbeceb}.bt.cold{background:#eaf1fc}.bt.warn{background:#fff4e0}
+.bt .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.bt .chip{border:0;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;background:#24272d;color:#cfd3d8}
+.bt .chip.on{background:#fff;color:var(--tx)}
+.bt.d3{padding:0;min-height:300px}.bt.d3 #v3d{height:300px!important;border-radius:0}
+.bt.d3 .ov{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.9);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;z-index:3}
+.bt.d3 .ov2{position:absolute;right:12px;bottom:12px;background:var(--tx);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;z-index:3}
+.bt .rl{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.bt .rl i{font-style:normal;font-size:12px;background:#f2f2f0;border-radius:8px;padding:4px 8px;color:#3b4048}
+.secT{font-size:13px;font-weight:700;color:var(--mut);margin:16px 2px 8px;text-transform:uppercase;letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -519,20 +568,22 @@ const fname=f=>{const P=cur();return P&&P.basement?(f===0?"Yerto'la (−1)":`${f
 function render(){const P=cur();if(V.page!=="home"&&!P)V.page="home";if(P)recalc();save();
   const back=V.page!=="home";$("hBack").style.visibility=back?"visible":"hidden";if(tg&&tg.BackButton){back?tg.BackButton.show():tg.BackButton.hide();}
   $("hSet").style.visibility=V.page==="home"?"visible":"hidden";park3d();
-  ({home:pgHome,wiz:pgWiz,room:pgRoom,set:pgSet})[V.page]();const sk=[V.page,V.pid,V.step,V.tab,V.rid].join('|');if(!V.keepScroll&&sk!==V._sk)window.scrollTo(0,0);V._sk=sk;V.keepScroll=false;}
+  ({home:pgHome,wiz:pgWiz,room:pgRoom,set:pgSet,dash:pgDash})[V.page]();const sk=[V.page,V.pid,V.step,V.tab,V.rid].join('|');if(!V.keepScroll&&sk!==V._sk)window.scrollTo(0,0);V._sk=sk;V.keepScroll=false;}
 
 /* ---------- BOSH SAHIFA ---------- */
 function pgHome(){setHeader("Santexnik Smeta","Isitish · suv · kanalizatsiya");prog(0);
   const L=DB.projects.slice().sort((a,b)=>(b.created||0)-(a.created||0));
   $("main").innerHTML=`<h2>Obyektlarim</h2><p class="lead">Har bir obyekt — alohida loyiha va alohida chizma.</p>`+
-  (L.length?L.map(p=>{const h=calcHouse(p),t=h.ok.length?smeta(h,p.variant).total:0;return `<div class="card pc" onclick="App.open('${p.id}')"><div class="in"><b>${esc(p.name||"Nomsiz obyekt")}</b><div>${OBJ[p.type][0]} · ${p.floors} qavat · ${p.rooms.length} xona${t?` · ${fmt(t/1e6,1)} mln`:""}</div></div><span class="chev">›</span></div>`;}).join(""):`<div class="empty">Hali obyekt yo'q</div>`);
+  (L.length?L.map(p=>{const h=calcHouse(p),t=h.ok.length?smeta(h,p.variant).total:0;return `<div class="card pc" onclick="App.open('${p.id}')"><div class="in"><b>${esc(p.name||"Nomsiz obyekt")}</b><div>${OBJ[p.type][0]} · ${flTxt(p)} · ${p.rooms.length} xona${t?` · ${fmt(t/1e6,1)} mln`:""}</div></div><span class="chev">›</span></div>`;}).join(""):`<div class="empty">Hali obyekt yo'q</div>`);
   foot(`<button class="btn" onclick="App.newP()">+ Obyekt qo'shish</button>`);}
-App.open=id=>{V.pid=id;V.page="wiz";const p=cur();V.step=p.rooms.length?NS:1;V.tab="sum";V.fl=0;render();};
-App.newP=()=>{const p=newObj("dacha");DB.projects.push(p);V.pid=p.id;V.page="wiz";V.step=1;V.fl=0;render();};
+App.open=id=>{V.pid=id;V.page="dash";V.tab="3d";V.fl=0;render();};
+App.dash=()=>{V.page="dash";render();};
+App.sec=(st,tab)=>{V.page="wiz";V.step=st;if(tab)V.tab=tab;render();};
+App.newP=()=>{const p=newObj("dacha");DB.projects.push(p);V.pid=p.id;V.page="dash";V.fl=0;render();};
 
 /* ---------- USTA ---------- */
-function nav(prev,next,label="Keyingi ›",dis=false){foot(`<button class="btn back grey" onclick="${prev}">‹ ${prev.includes("home")?"Chiqish":"Orqaga"}</button><button class="btn" onclick="${next}" ${dis?"disabled style='opacity:.5'":""}>${label}</button>`);}
-function pgWiz(){const P=cur(),st=P.set;setHeader(P.name||"Yangi obyekt",`${V.step}-qadam / ${NS} · ${STEPS[V.step-1]}`);prog(V.step/NS);let h="";
+function nav(prev,next,label,dis){foot(`<button class="btn" onclick="App.dash()">Tayyor</button>`);return;foot(`<button class="btn back grey" onclick="${prev}">‹ ${prev.includes("home")?"Chiqish":"Orqaga"}</button><button class="btn" onclick="${next}" ${dis?"disabled style='opacity:.5'":""}>${label}</button>`);}
+function pgWiz(){const P=cur(),st=P.set;setHeader(P.name||"Yangi obyekt",V.step===NS?({"3d":"3D ko'rinish",smeta:"Smeta",tizim:"Tizimlar",taklif:"Tavsiyalar",sum:"Xulosa"})[V.tab]||"":["Obyekt","Bino va izolyatsiya","Tizimlar","Xonalar","Kollektor va sozlash"][V.step-1]);prog(V.step/NS);let h="";
   if(V.step===1){h=`<h2>Obyekt</h2><p class="lead">Turi tanlansa, keyingi qadamlarda shunga mos namuna tayyorlanadi.</p>
     <div class="card"><h3>Obyekt turi</h3><div class="opts c2">${Object.entries(OBJ).map(([k,v])=>opt(P.type===k,`App.otype('${k}')`,v[0],v[1])).join("")}</div></div>
     <div class="card"><label class="f" style="margin-top:0">Nomi</label>${inBig(P.name,"App.pf('name',this.value)","","text","Masalan: Chorvoq, Akmal aka dachasi")}
@@ -569,9 +620,9 @@ function pgWiz(){const P=cur(),st=P.set;setHeader(P.name||"Yangi obyekt",`${V.st
   if(V.step===5){const qroom=H.boiler.room;
     h=`<h2>Sozlash</h2><p class="lead">Kollektor va qozonxona joyi, suv harorati.</p>`;
     h+=`<div class="card"><h3>Qozonxona xonasi</h3><div class="opts c2">${H.ok.filter(x=>x.f===0).map(x=>opt(qroom&&qroom.r.id===x.r.id,`App.pf('boiler','${x.r.id}')`,esc(x.r.name),"","c")).join("")}</div></div>`;
-    [...new Set(H.cl.map(C=>C.f))].forEach(f=>{const cs=H.cl.filter(C=>C.f===f),rooms=H.ok.filter(x=>x.f===f&&x.r.heat!=="yoq"&&x.r.type!=="balkon");
+    [...new Set(H.cl.map(C=>C.f))].filter(f=>H.ok.some(x=>x.f===f&&x.loops&&x.loops.length)).forEach(f=>{const cs=H.cl.filter(C=>C.f===f),rooms=H.ok.filter(x=>x.f===f&&x.r.heat!=="yoq"&&x.r.type!=="balkon");
       h+=`<div class="card"><h3>${fname(f)} kollektorlari</h3><div class="hint" style="margin:0 0 8px">Kollektor devorga o'yilgan 80×80 sm shkafda turadi. Kerak bo'lsa bir qavatga bir nechta kollektor qo'ying va har biriga xonalarni biriktiring.</div>`;
-      cs.forEach(C=>{const i=C.ci;h+=`<div class="card" style="margin:0 0 10px;border:2px solid #1565d8"><div class="row"><b>${i+1}-kollektor</b><span>${C.loops.length} kontur → ${C.n||0} ta shkaf</span></div>
+      cs.forEach(C=>{const i=C.ci;h+=`<div class="card" style="margin:0 0 10px;background:#fafaf8;border:1px solid var(--ln)"><div class="row"><b>${i+1}-kollektor</b><span>${C.loops.length} kontur → ${C.n||0} ta shkaf</span></div>
         <label class="f">Qaysi xonaga o'rnatiladi</label><div class="opts c2">${rooms.map(x=>opt(C.room===x,`App.coll(${f},${i},'room','${x.r.id}')`,esc(x.r.name),"","c")).join("")}</div>
         <label class="f">Qaysi devorida (devorni bosing)</label><div class="card" style="padding:6px;margin:0">${svgColl(C)}</div>
         ${cs.length>1?`<label class="f">Qaysi xonalarni isitadi</label><div class="opts c2">${rooms.map(x=>opt(x.coll===C,`App.collRoom(${f},${i},'${x.r.id}')`,esc(x.r.name),"","c")).join("")}</div>`:""}
@@ -582,8 +633,40 @@ function pgWiz(){const P=cur(),st=P.set;setHeader(P.name||"Yangi obyekt",`${V.st
     if(H.hasRad)h+=`<div class="card"><h3>Radiatorga suv</h3><div class="opts">${Object.entries(RPRE).map(([k,v])=>opt(st.rpre===k,`App.rpre('${k}')`,v[2],v[3])).join("")}</div></div>`;
     h+=`<div class="card"><h3>Byudjet (ixtiyoriy)</h3>${inBig(P.budget?fmt(P.budget):"","App.pf('budget',App.n(this.value))","so'm","numeric","Masalan 150 000 000")}</div>`;
     nav("App.go(4)","App.go(6)","Hisoblash ›");}
-  if(V.step===6){h=pgResult();foot(`<button class="btn back grey" onclick="App.go(5)">‹ Orqaga</button><button class="btn" onclick="App.toBot()">Botga yuborish</button>`);}
+  if(V.step===6){if(V.tab==="sum")V.tab="3d";h=pgResult();foot(`<button class="btn back grey" onclick="App.dash()">‹ Loyiha</button><button class="btn" onclick="App.toBot()">Botga yuborish</button>`);}
   $("main").innerHTML=h;if(V.step===6&&V.tab==="3d")show3d();}
+
+/* ---------- LOYIHA EKRANI (bento) ---------- */
+const flTxt=P=>P.basement?`${P.floors-1} qavat + yerto'la`:`${P.floors} qavat`;
+function pgDash(){const P=cur(),st=P.set;const has=H.ok.length>0;
+  setHeader(P.name||"Yangi obyekt",`${OBJ[P.type][0]} · ${flTxt(P)}${has?` · ${fmt(H.A,0)} m²`:""}`);prog(0);
+  const T=(cls,click,k,v,s,go="↗",extra="")=>`<div class="bt ${cls}" onclick="${click}">${go?`<span class="go">${go}</span>`:""}<div class="k">${k}</div><div>${v?`<div class="v">${v}</div>`:""}${s?`<div class="s">${s}</div>`:""}${extra}</div></div>`;
+  let h=`<div class="bento">`;
+  if(!has){
+    h+=T("w2 dark","App.sec(4)","Boshlash","Xonalarni qo'shing","Xonalar o'lchami kiritilgach, issiq pol, quvurlar, 3D va smeta shu yerda avtomatik chiqadi.","+");
+    h+=T("","App.sec(1)","Obyekt",esc(OBJ[P.type][0]),esc(P.name||"Nomi kiritilmagan"));
+    h+=T("","App.sec(2)","Bino",`${P.floors}<small>qavat</small>`,`${P.basement?"Yerto'la bor · ":""}${fmt(st.floorH,1)} m balandlik`);
+    h+=T("w2","App.sec(3)","Tizimlar","Gaz, suv, kanalizatsiya","Manba, issiq suv, basseyn, sug'orish");
+    h+=`</div>`;$("main").innerHTML=h;foot(`<button class="btn" onclick="App.sec(4)">+ Xona qo'shish</button>`);return;}
+  const S=Object.fromEntries(Object.keys(VARS).map(k=>[k,smeta(H,k)])),cur3=S[P.variant],bs=cur3.bs;
+  const allW=[].concat(H.warns,...H.ok.map(x=>x.warns.map(w=>`${esc(x.r.name)}: ${w}`))).concat(cur3.warn);
+  h+=`<div class="bt w2 d3" onclick=""><span class="ov">3D · ${H.loops.length} kontur</span><div id="slot3d"></div><span class="ov2" onclick="event.stopPropagation();App.sec(6,'3d')">To'liq ochish ↗</span></div>`;
+  h+=T("w2 dark","App.sec(6,'smeta')","Smeta · "+VARS[P.variant][0],`${fmt(cur3.total/1e6,1)}<small>mln so'm</small>`,P.budget?(cur3.total<=P.budget?`Byudjetga sig'adi · ${fmt((P.budget-cur3.total)/1e6,1)} mln qoladi`:`Byudjetdan ${fmt((cur3.total-P.budget)/1e6,1)} mln oshadi`):"Material va uskunalar, usta haqisiz","↗",
+    `<div class="chips">${Object.entries(VARS).map(([k,v])=>`<button class="chip ${P.variant===k?"on":""}" onclick="event.stopPropagation();App.variant('${k}')">${v[0]} ${fmt(S[k].total/1e6,0)}</button>`).join("")}</div>`);
+  h+=T("hot","App.sec(6,'tizim')","Kotyol",`${bs.n>1?bs.n+"×"+bs.unitKW:H.kw}<small>kVt</small>`,`Umumiy yuk ${fmt(H.totKW,1)} kVt`);
+  h+=T("","App.sec(6,'tizim')","Issiq pol",`${fmt(H.pipeL)}<small>m</small>`,`${H.loops.length} kontur · bukilish ${fmt(H.minR*1000)} mm`);
+  h+=T("","App.sec(5)","Kollektorlar",`${H.cl.filter(C=>C.loops&&C.loops.length).length}<small>ta</small>`,"Joyi va xonalari — bosib sozlang");
+  h+=T("cold","App.sec(6,'tizim')","Issiq suv",`${H.bkn}<small>L</small>`,`Boyler · ${H.N} ta asbob`);
+  h+=T("w2","App.sec(4)","Xonalar",`${H.ok.length}<small>ta · ${fmt(H.A,0)} m²</small>`,`${H.G} mehmon`,"✎",`<div class="rl">${H.ok.slice(0,10).map(x=>`<i>${esc(x.r.name)}</i>`).join("")}${H.ok.length>10?`<i>+${H.ok.length-10}</i>`:""}</div>`);
+  h+=T("","App.sec(2)","Bino",`${P.floors-(P.basement?1:0)}<small>qavat${P.basement?" + −1":""}</small>`,`${(WALLS.find(w=>w[0]===st.wall)||[0,""])[1]}`,"✎");
+  h+=T("","App.sec(3)","Tizimlar",`${P.pool&&P.pool.on?"Basseyn":"Suv"}`,`${P.sewer==="septik"?"Septik":P.sewer==="los"?"Tozalash":"Markaziy kanalizatsiya"}`,"✎");
+  h+=T("","App.sec(6,'taklif')","Tavsiyalar",`${recos(H).length}<small>ta</small>`,"Arzonroq va tezroq yechimlar");
+  h+=T("","App.sec(1)","Obyekt",esc(OBJ[P.type][0]),esc(P.phone||"Buyurtmachi ma'lumoti"),"✎");
+  if(allW.length)h+=T("w2 warn","App.sec(6,'smeta')","Diqqat",`${allW.length}<small>ta eslatma</small>`,allW.slice(0,2).join("<br>"));
+  h+=`</div>`;
+  $("main").innerHTML=h;foot(`<button class="btn back grey" onclick="App.share()">Ulashish</button><button class="btn" onclick="App.toBot()">Botga yuborish</button>`);
+  App.o3.floor=App.o3.floor==null?-1:App.o3.floor;show3d();}
+
 function svgColl(C){const x=C.room,P=x.P,xs=P.map(p=>p[0]),ys=P.map(p=>p[1]),mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys),W=340,pad=40,sc=Math.min((W-2*pad)/(mxx-mnx),(320-2*pad)/(mxy-mny)),Hh=(mxy-mny)*sc+2*pad;
   window.SVGT=window.SVGT||{};const key=C.f+'_'+C.ci;SVGT[key]={mnx,mny,sc,Hh,pad,W,P};
   const T=p=>[pad+(p[0]-mnx)*sc,Hh-pad-(p[1]-mny)*sc];let g="";
@@ -595,7 +678,7 @@ function svgColl(C){const x=C.room,P=x.P,xs=P.map(p=>p[0]),ys=P.map(p=>p[1]),mnx
   <div style="font-size:12px;color:#667">Devorni bosing — kollektor shu nuqtaga qo'yiladi. Shkaf 80×80 sm, devorga 10 sm kiradi. Quvurlar avtomatik qayta yo'naltiriladi.</div>`;}
 
 /* ---------- NATIJA ---------- */
-function pgResult(){const P=cur(),st=P.set,tabs=[["sum","Xulosa"],["3d","3D"],["smeta","Smeta"],["tizim","Tizimlar"],["taklif","Tavsiyalar"]];
+function pgResult(){const P=cur(),st=P.set,tabs=[["3d","3D"],["smeta","Smeta"],["tizim","Tizimlar"],["taklif","Tavsiyalar"]];
   let h=`<div class="tabs">${tabs.map(([k,t])=>`<button class="${V.tab===k?"on":""}" onclick="App.tab('${k}')">${t}</button>`).join("")}</div>`;
   const allW=[].concat(H.warns,...H.ok.map(x=>x.warns.map(w=>`<b>${esc(x.r.name)}:</b> ${w}`)));
   if(V.tab==="sum"){const S=Object.fromEntries(Object.keys(VARS).map(k=>[k,smeta(H,k)])),bs=S[P.variant].bs;
@@ -666,7 +749,7 @@ function pgSet(){setHeader("Sozlamalar","Narxlar va texnik qiymatlar");prog(0);
 /* ---------- AMALLAR ---------- */
 App.n=v=>num(v);
 App.home=()=>{V.page="home";render();};
-App.back=()=>{if(V.page==="room")return App.roomDone();if(V.page==="set")return App.home();if(V.page==="wiz"){if(V.step>1)return App.go(V.step-1);return App.home();}};
+App.back=()=>{if(V.page==="room")return App.roomDone();if(V.page==="set")return App.home();if(V.page==="wiz")return App.dash();if(V.page==="dash")return App.home();};
 App.go=s=>{const P=cur();if(s>=2&&!P.name)P.name=OBJ[P.type][0]+" "+DB.projects.length;if(s>=5&&!H.ok.length){V.step=4;return render();}V.step=s;render();};
 App.pf=(k,v)=>{cur()[k]=v;render();};
 App.otype=k=>{const P=cur();const fresh=newObj(k);Object.assign(P,{type:k,floors:fresh.floors,pool:fresh.pool,sauna:fresh.sauna,irrig:fresh.irrig});render();};
