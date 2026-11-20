@@ -298,6 +298,32 @@ function calcHouse(P){const st=P.set,FH=num(st.floorH)||3.2,rs=P.rooms.map(r=>({
   if(P.irrig.on){const A=num(P.irrig.area);H.irr={A,heads:Math.ceil(A/30),zones:Math.max(1,Math.ceil(A/80)),pe:Math.ceil(Math.sqrt(A)*4+A/15),water:A*5};}
   if(P.solar)H.solarM2=Math.max(2,Math.round(G*1.2));
   return H;}
+/* ---------- tranzit quvur yo'naltirgich: xonalar devori bo'yidagi yo'lak + devordan o'tish (A*) ---------- */
+function routeFloor(H,f,A,B){H._rg=H._rg||{};let G=H._rg[f];const res=0.05;
+  if(!G){const R=H.ok.filter(x=>x.f===f).map(x=>{const xs=x.P.map(p=>p[0]+x.pos[0]),ys=x.P.map(p=>p[1]+x.pos[1]);return [Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];});
+    if(!R.length)return null;const x0=Math.min(...R.map(r=>r[0]))-0.2,y0=Math.min(...R.map(r=>r[1]))-0.2,nx=Math.ceil((Math.max(...R.map(r=>r[2]))+0.2-x0)/res),ny=Math.ceil((Math.max(...R.map(r=>r[3]))+0.2-y0)/res);
+    const inR=(px,py)=>R.findIndex(r=>px>r[0]&&px<r[2]&&py>r[1]&&py<r[3]),cost=new Float32Array(nx*ny);
+    for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const px=x0+(i+0.5)*res,py=y0+(j+0.5)*res,k=inR(px,py);let c=0;
+      if(k>=0){const r=R[k],d=Math.min(px-r[0],r[2]-px,py-r[1],r[3]-py);c=d<0.065?1:0;}
+      else{const W=0.14;if((inR(px-W,py)>=0&&inR(px+W,py)>=0)||(inR(px,py-W)>=0&&inR(px,py+W)>=0))c=4;}
+      cost[j*nx+i]=c;}
+    G=H._rg[f]={x0,y0,nx,ny,cost};}
+  const {x0,y0,nx,ny,cost}=G,cell=p=>[Math.floor((p[0]-x0)/res),Math.floor((p[1]-y0)/res)];
+  const snap=p=>{let [i,j]=cell(p);if(i>=0&&j>=0&&i<nx&&j<ny&&cost[j*nx+i]>0)return j*nx+i;let b=-1,bd=1e9;for(let dj=-3;dj<=3;dj++)for(let di=-3;di<=3;di++){const ii=i+di,jj=j+dj;if(ii<0||jj<0||ii>=nx||jj>=ny||!cost[jj*nx+ii])continue;const d=di*di+dj*dj;if(d<bd){bd=d;b=jj*nx+ii;}}return b;};
+  const s0=snap(A),g0=snap(B);if(s0<0||g0<0)return null;
+  const D=[[1,0],[-1,0],[0,1],[0,-1]],N=nx*ny*4,gs=new Float32Array(N).fill(1e9),from=new Int32Array(N).fill(-1),gi=g0%nx,gj=(g0/nx)|0;
+  const heap=[],push=(k,p)=>{heap.push([p,k]);let i=heap.length-1;while(i>0){const q=(i-1)>>1;if(heap[q][0]<=heap[i][0])break;[heap[q],heap[i]]=[heap[i],heap[q]];i=q;}},
+    pop=()=>{const t=heap[0],l=heap.pop();if(heap.length){heap[0]=l;let i=0;for(;;){const a=2*i+1,b=a+1;let m=i;if(a<heap.length&&heap[a][0]<heap[m][0])m=a;if(b<heap.length&&heap[b][0]<heap[m][0])m=b;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m;}}return t;};
+  for(let d=0;d<4;d++){gs[s0*4+d]=0;push(s0*4+d,0);}let end=-1,it=0;
+  while(heap.length&&it++<400000){const [,st]=pop(),c=st>>2,d=st&3;if(c===g0){end=st;break;}const ci=c%nx,cj=(c/nx)|0,g=gs[st];
+    for(let e=0;e<4;e++){const ni=ci+D[e][0],nj=cj+D[e][1];if(ni<0||nj<0||ni>=nx||nj>=ny)continue;const nc=nj*nx+ni,w=cost[nc];if(!w)continue;
+      const ng=g+w*res+(e!==d?0.4:0),ns=nc*4+e;if(ng<gs[ns]){gs[ns]=ng;from[ns]=st;push(ns,ng+(Math.abs(ni-gi)+Math.abs(nj-gj))*res);}}}
+  if(end<0)return null;const cs=[];for(let st=end;st>=0;st=from[st])cs.push(st>>2);cs.reverse();
+  const pts=cs.map(c=>[x0+((c%nx)+0.5)*res,y0+(((c/nx)|0)+0.5)*res]);pts[0]=A.slice();pts.push(B.slice());
+  const out=[pts[0]];for(let i=1;i<pts.length-1;i++){const a=out[out.length-1],b=pts[i],c=pts[i+1];if(Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))>1e-9)out.push(b);}out.push(pts[pts.length-1]);
+  /* to'g'ri burchakli qilish: diagonal qisqa bo'laklarni L ga aylantirish */
+  const o2=[out[0]];for(let i=1;i<out.length;i++){const a=o2[o2.length-1],b=out[i];if(Math.abs(a[0]-b[0])>1e-6&&Math.abs(a[1]-b[1])>1e-6)o2.push([b[0],a[1]]);o2.push(b);}
+  return o2;}
 function calcRoom(x,st,H){const r=x.r;x.warns=[];x.loops=[];x.pipe=0;x.sec=0;x.rads=0;x.Qf=0;x.tF=0;x.Q=0;if(x.sh.err){x.err=x.sh.err;return;}if(x.sh.warn)x.warns.push(x.sh.warn);
   const P=x.P,A=area(P),per=perim(P),h=num(r.h)||3,T=RT[r.type]||RT.zal,ti=T.t,dT=ti-num(st.tOut),sides=[num(r.a),num(r.b),num(r.c),num(r.d)];
   Object.assign(x,{A,per,h,ti,sides,tF:ti});if(r.type==="balkon"||r.heat==="yoq"&&r.type!=="sauna"&&r.type!=="qozon"){x.cover=1;return;}
@@ -310,9 +336,9 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.loops=[];x.pipe=0;x.sec=0;x.r
     const portAbs=dt=>C?add(C.wallPt,add(mul(C.dir,C.room===x?dt:0),mul(C.n,0.03))):null;
     /* quvurlar kesishishini sanash (bir xona ichida) */
     const segX=(a,b,c,d)=>{const o=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);return o(c,d,a)*o(c,d,b)<-1e-12&&o(a,b,c)*o(a,b,d)<-1e-12;};
-    const crossN=zs=>{const sg=[];zs.forEach((z,li)=>{const p=z.core;for(let i=1;i<p.length;i++)sg.push([li,i,p[i-1],p[i]]);});let c=0;
+    const crossN=zs=>{const sg=[];let id=zs.length;zs.forEach((z,li)=>{const p=z.core;for(let i=1;i<p.length;i++)sg.push([li,i,p[i-1],p[i]]);(z.legs||[]).forEach(l=>sg.push([id++,1,l[0],l[1]]));});let c=0;
       for(let i=0;i<sg.length;i++)for(let j=i+1;j<sg.length;j++){const A=sg[i],B=sg[j];if(A[0]===B[0]&&Math.abs(A[1]-B[1])<=1)continue;if(segX(A[2],A[3],B[2],B[3]))c++;}return c;};
-    let tooSmall=false;const R0=Math.max(RMIN,num(st.bendR)/100);
+    const bbX=Math.max(...P.map(p=>p[0])),bbY=Math.max(...P.map(p=>p[1]));let tooSmall=false;const R0=Math.max(RMIN,num(st.bendR)/100);
     const build=(w,te0F,nFrom,tallMode)=>{
       const PR=[0,1,2,3].map(k=>P[(w+k)%4]),A0=PR[0],u=nrm(sub(PR[1],PR[0])),vN=[-u[1],u[0]],Lw=len(sub(PR[1],PR[0])),loc=(t,d)=>add(add(A0,mul(u,t)),mul(vN,d)),tOf=p=>dot(sub(p,A0),u),dOf=p=>dot(sub(p,A0),vN);
       let te0=te0F(Lw,tOf);
@@ -338,7 +364,7 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.loops=[];x.pipe=0;x.sec=0;x.r
         const tr=o=>{if(!C||C.room===x)return [];const pa=portAbs(0),oa=toAbs(o);return [pa,[pa[0],oa[1]],oa];};
         const trS=tr(core[0]),trR=tr(core[core.length-1]).reverse();
         const L=plen(core)+plen(trS)+plen(trR)+(C?1.3:6);mx=Math.max(mx,L);
-        zones.push({Z:Zs,eArr:eS,sp,core,tailSL:[core[0]],tailRL:[core[core.length-1]],trS,trR,L,minR:Math.min(a.minR,b.minR,ct.minR),dS:xo(jS)-te0,dR:xo(jR)-te0,s});}
+        const arrS=toAbs(loc(tOf(core[0]),0.03)),arrR=toAbs(loc(tOf(core[core.length-1]),0.03)),legs=(C&&C.room!==x)?[[loc(tOf(core[0]),0.02),core[0]],[loc(tOf(core[core.length-1]),0.02),core[core.length-1]]]:[];zones.push({Z:Zs,eArr:eS,sp,core,arrS,arrR,legs,tailSL:[core[0]],tailRL:[core[core.length-1]],trS,trR,L,minR:Math.min(a.minR,b.minR,ct.minR),dS:xo(jS)-te0,dR:xo(jR)-te0,s});}
       if(!good){if(n===1)tooSmall=true;break;}okk=true;if(mx<=maxL)break;}
     if(!okk)zones=[];return {zones,okk,mx:zones.reduce((m,z)=>Math.max(m,z.L),0)};};
     let w0=0;if(C){if(C.room===x)w0=C.wall;else{let b=1e9;for(let i=0;i<4;i++){const d=man(toAbs(lerp(P[i],P[(i+1)%4],.5)),C.floor);if(d<b){b=d;w0=i;}}}}
@@ -347,8 +373,12 @@ function calcRoom(x,st,H){const r=x.r;x.warns=[];x.loops=[];x.pipe=0;x.sec=0;x.r
     const cands=[[w0,teDef,1,null]];for(let n=2;n<=6;n++)cands.push([w0,teDef,n,null]);[true,false].forEach(tm=>{for(let n=1;n<=6;n++)cands.push([w0,teDef,n,tm]);});
     if(!own){const sh=[0.3,-0.3,0.6,-0.6,1,-1,1.5,-1.5];sh.forEach(d=>{const f=(Lw,tOf)=>Math.max(0.2,Math.min(Lw-0.2,teDef(Lw,tOf)+d));cands.push([w0,f,1,null]);});
       [1,2,3].forEach(k=>{const ww=(w0+k)%4;cands.push([ww,(Lw)=>Lw/2,1,null]);cands.push([ww,teDef,1,null]);});}
-    let best=null,bc=1e9;for(const [cw,cf,cn,ct] of cands){const R=build(cw,cf,cn,ct);if(!R.okk)continue;const c=crossN(R.zones)+(R.mx>maxL?0.5:0)+(R.zones.some(z=>z.minR<R0-1e-3)?0.25:0);if(c<bc){bc=c;best=R;}if(c===0)break;}
+    let best=null,bc=1e9;for(const [cw,cf,cn,ct] of cands){const R=build(cw,cf,cn,ct);if(!R.okk)continue;const outN=R.zones.reduce((a,z)=>a+(z.core.some(p=>p[0]<-1e-3||p[1]<-1e-3||p[0]>bbX+1e-3||p[1]>bbY+1e-3)?1:0),0);const c=crossN(R.zones)+outN+(R.mx>maxL?0.5:0)+(R.zones.some(z=>z.minR<R0-1e-3)?0.25:0);if(c<bc){bc=c;best=R;}if(c===0)break;}
     let zones=best?best.zones:[];if(!best&&tooSmall)x.warns.push("Xona issiq pol uchun juda kichik");
+    /* tranzit: to'g'ri chiziq emas — devor bo'yidagi bo'sh yo'lak (konturlar chetidagi 10 sm) bo'ylab, boshqa konturlarni kesmasdan */
+    if(C&&!own)zones.forEach(z=>{const pa=portAbs(0),c0=toAbs(z.core[0]),c1=toAbs(z.core[z.core.length-1]);
+      const a=routeFloor(H,x.f,pa,z.arrS),b=routeFloor(H,x.f,pa,z.arrR);
+      if(a&&b){z.trS=a.concat([c0]);z.trR=[c1].concat(b.slice().reverse());z.L=plen(z.core)+plen(z.trS)+plen(z.trR)+1.3;}});
 
     zones.forEach(z=>{z.A=Math.min(A/zones.length,plen(z.core)*z.s);z.room=x;
       const inRoom=z.core.map(toAbs);z.full=z.trS.concat(inRoom,z.trR);
@@ -737,12 +767,16 @@ function build(H,o){if(group){scene.remove(group);group.traverse(m=>{if(m.geomet
     const lines=[[-0.12,0x1f6fe0,"c"]].concat(W.oh?[[0.0,0xff6b6b,"h"]]:[]).concat(W.oh&&H.recirc?[[0.12,0xffa8a8,"r"]]:[]);
     lines.forEach(([off,col])=>{const a=[W.pos[0]+W.dir[0]*off-W.n[0]*0.03,W.pos[1]+W.dir[1]*off-W.n[1]*0.03],b=[B.pt[0]+0.4+off,B.pt[1]+0.4+off],yb=bz+0.13;
       if(!one||W.f===0){const t=tubeOf([V3(a,z+0.75),V3(a,yb),V3([b[0],a[1]],yb),V3(b,yb),V3(b,bz+0.9)],0.013,mat(col));if(t)group.add(t);}});
-    W.rooms.forEach(x=>{const tgt=[x.c[0],x.c[1]],hot=Object.entries(x.r.fx||{}).some(([k,c])=>+c&&FX[k]&&FX[k][2]);[[0,0x1f6fe0]].concat(hot?[[0.05,0xff6b6b]]:[]).forEach(([off,col])=>{const a=[W.pos[0]-W.n[0]*0.03+off,W.pos[1]-W.n[1]*0.03];const t=tubeOf([V3(a,z+0.75),V3(a,z+0.09),V3([tgt[0]+off,a[1]],z+0.09),V3([tgt[0]+off,tgt[1]],z+0.09),V3([tgt[0]+off,tgt[1]],z+0.6)],0.007,mat(col));if(t)group.add(t);});});});
+    W.rooms.forEach(x=>{const A=x.P.map(p=>add(p,x.pos)),xs=A.map(p=>p[0]),ys=A.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),c=x.c,hot=Object.entries(x.r.fx||{}).some(([k,c])=>+c&&FX[k]&&FX[k][2]);
+      const base=[W.pos[0]-W.n[0]*0.03,W.pos[1]-W.n[1]*0.03],cand=[[c[0],y0+0.03],[c[0],y1-0.03],[x0+0.03,c[1]],[x1-0.03,c[1]]],tgt=cand.sort((p,q)=>man(p,base)-man(q,base))[0];
+      /* suv quvuri ham devor bo'yidagi yo'lak bo'ylab — issiq pol konturlarini kesmaydi; asbobga devordan ko'tariladi */
+      const path=routeFloor(H,W.f,base,tgt)||[base,[tgt[0],base[1]],tgt];
+      [[0,0x1f6fe0]].concat(hot?[[0.02,0xff6b6b]]:[]).forEach(([off,col])=>{const pts=path.map(p=>[p[0]+off,p[1]+off]);const t=tubeOf([V3(pts[0],z+0.75)].concat(pts.map(p=>V3(p,z+0.09)),[V3(pts[pts.length-1],z+0.6)]),0.007,mat(col));if(t)group.add(t);});});});
   if(B.room&&(!one||B.room.f===o.floor)){const z=zOf(B.room.f),c=B.pt;group.add(box(0.45,0.75,0.35,0xeeeeee,c[0],z+1.3,-c[1]));group.add(box(0.55,1.4,0.55,0xdfe3e8,c[0]+0.7,z+0.75,-c[1]));}
   /* kanalizatsiya stoyaklari va chiqish */
   if(o.sew){H.wet.filter(x=>x.r.fx&&x.r.fx.unitaz&&show(x)).forEach(x=>{const A=x.P.map(p=>[p[0]+x.pos[0],p[1]+x.pos[1]]),p=[A[3][0]+0.15,A[3][1]-0.15],z=zOf(x.f);
       const t=tubeOf([V3(p,one?-0.4:-0.4),V3(p,z+(x.r.top||one?1.3:FH))],0.055,mat(0x7b5534));if(t)group.add(t);
-      if(x.f===0||one){const t2=tubeOf([V3(p,-0.4),V3([mnx-2,p[1]],-0.4-0.02*(p[0]-mnx+2))],0.055,mat(0x7b5534));if(t2)group.add(t2);}});}
+      if((!one&&x.f===0)||(one&&o.floor===(H.P.basement?1:0))){const t2=tubeOf([V3(p,-0.4),V3([mnx-2,p[1]],-0.4-0.02*(p[0]-mnx+2))],0.055,mat(0x7b5534));if(t2)group.add(t2);}});}
   scene.add(group);
   const key=o.floor+"|"+H.ok.map(x=>x.r.id).join()+Math.round(mxx-mnx)+Math.round(mxy-mny);if(key!==fitKey&&mnx<1e8){fitKey=key;const cx=(mnx+mxx)/2,cy=(mny+mxy)/2,sz=Math.max(mxx-mnx,mxy-mny,3),hz=one?0:(H.P.floors-1)*FH/2;controls.target.set(cx,hz,-cy);
     const dist=sz/(2*Math.tan(camera.fov*Math.PI/360))*Math.max(1.15,1.25/Math.max(camera.aspect,0.4));const dv=new THREE.Vector3(0.25,1.0,0.8).normalize().multiplyScalar(dist);camera.position.set(cx+dv.x,hz+dv.y,-cy+dv.z);}
