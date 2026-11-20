@@ -305,6 +305,9 @@ function calcHouse(P){const st=P.set,FH=num(st.floorH)||3.2,rs=P.rooms.map(r=>({
     let tt=(sel.room===cr.r.id&&sel.wall===w&&sel.t!=null)?+sel.t:Lw/2;tt=Math.max(half,Math.min(Lw-half,tt));const m=add(p,mul(dv,tt));
     const C={f,ci,rooms:sel.rooms||null,room:cr,wall:w,t:tt,Lw,dir:dv,n,nv:n,wallPt:add(m,cr.pos),floor:add(add(m,mul(n,0.25)),cr.pos),z:cr.z};
     H.cl.push(C);if(ci===0)H.colls[f]=C;});}
+  /* kollektor turgan joyda devor bormi (devor olib tashlangan bo'lishi mumkin) */
+  H.cl.forEach(C=>{const pt=C.wallPt;let wallOk=false;ok.filter(x=>x.f===C.f).forEach(x=>{const A=x.P.map(p=>add(p,x.pos));for(let j=0;j<4;j++){if(x.r.open&&x.r.open[j])continue;const a=A[j],b=A[(j+1)%4],d=nrm(sub(b,a)),L=len(sub(b,a)),t=dot(sub(pt,a),d),off=Math.abs((pt[0]-a[0])*d[1]-(pt[1]-a[1])*d[0]);if(off<0.3&&t>0.3&&t<L-0.3)wallOk=true;}});
+    C.noWall=!wallOk;if(!wallOk)H.warns.push(`${fname(C.f)}: ${C.ci+1}-kollektor olib tashlangan devor joyida turibdi — "Kollektorlar" kartochkasidan boshqa devorga ko'chiring`);});
   /* xona qaysi kollektorga ulanadi: tanlangan ro'yxat bo'yicha, aks holda "qolgan xonalar" kollektoriga, u ham bo'lmasa eng yaqiniga */
   ok.forEach(x=>{const cs=H.cl.filter(C=>C.f===x.f);x.coll=cs.find(C=>C.rooms&&C.rooms.includes(x.r.id))||cs.find(C=>!C.rooms)||cs.slice().sort((a,b)=>man(a.floor,x.c)-man(b.floor,x.c))[0]||null;});
   rs.forEach(x=>calcRoom(x,st,H));
@@ -542,7 +545,7 @@ function svgRoom(x,st,opt={}){const P=x.P;if(!P)return "";const xs=P.map(p=>p[0]
   const T=p=>[pad+(p[0]-mnx)*sc,Hh-pad-(p[1]-mny)*sc];const pl=a=>a.map(p=>T(p).map(v=>v.toFixed(1)).join(",")).join(" ");let g="";
   if(opt.pipes!==false)x.loops.forEach(z=>{const f=loopTemps(z,st,x.ti),pts=z.core;let d=plen(z.trS),acc=[pts[0]];
     for(let i=1;i<pts.length;i++){acc.push(pts[i]);d+=len(sub(pts[i],pts[i-1]));if(acc.length>=8||i===pts.length-1){g+=`<polyline points="${pl(acc)}" fill="none" stroke="${tCol(f(d),st)}" stroke-width="${opt.sw||1.6}" stroke-linecap="round"/>`;acc=[pts[i]];}}});
-  P.forEach((p,i)=>{const q=P[(i+1)%4],a=T(p),b=T(q),ext=x.r.ext[i];g+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="${ext?"#8a5a2b":"#3a4048"}" stroke-width="${ext?7:3}" stroke-linecap="round"/>`;
+  P.forEach((p,i)=>{const q=P[(i+1)%4],a=T(p),b=T(q),ext=x.r.ext[i],op=x.r.open&&x.r.open[i];g+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="${op?"#b9bec5":ext?"#8a5a2b":"#3a4048"}" stroke-width="${op?2:ext?7:3}" stroke-dasharray="${op?"6 5":""}" stroke-linecap="round"/>`;
     if(opt.tap)g+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="transparent" stroke-width="34" onclick="App.toggleExt(${i})" style="cursor:pointer"/>`;});
   if(opt.labels!==false){const lab=["a","b","c","d"];P.forEach((p,i)=>{const q=P[(i+1)%4],m=T(lerp(p,q,.5)),dv=sub(q,p),l=len(dv),nn=[dv[1]/l,-dv[0]/l],cx=m[0]+nn[0]*22,cy=m[1]-nn[1]*22;
     g+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="13" fill="#1565d8"/><text x="${cx.toFixed(1)}" y="${(cy+5).toFixed(1)}" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">${lab[i]}</text>`;
@@ -726,6 +729,8 @@ function pgRoom(){const P=cur(),st=P.set,r=P.rooms.find(x=>x.id===V.room);if(!r)
     <label class="f">Diagonal (a–b burchagidan qarshi burchakka)</label>${inBig(num(r.diag)||"","App.rf('diag',this.value)")}<div class="hint">Xona qiyshiq bo'lsa aniq shaklni beradi. Bilmasangiz bo'sh qoldiring.</div>
     <div class="g2"><div><label class="f">Shift balandligi</label>${inBig(num(r.h)||"","App.rf('h',this.value)")}</div><div><label class="f">Derazalar maydoni</label>${inBig(num(r.win)||"","App.rf('win',this.value)","m²")}</div></div>
     <div id="rmsg">${roomMsg(x)}</div></div>`;
+  h+=`<div class="card"><h3>Devorni olib tashlash</h3><div class="hint" style="margin:0 0 8px">Ochiq reja uchun: devorni olib tashlasangiz, qo'shni xonaning shu devori ham olinadi (3D va rejada ko'rinmaydi). Issiq pol har xonada alohida qoladi.</div>
+    <div class="opts c2">${["a","b","c","d"].map((k,i)=>opt(!!(r.open&&r.open[i]),`App.wallOpen(${i})`,`${k} devor`,(r.open&&r.open[i])?"Olib tashlangan — qaytarish":(r.ext[i]?"Tashqi devor":"Bor — olib tashlash"),"")).join("")}</div></div>`;
   if(r.type!=="balkon")h+=`<div class="card"><h3>Isitish</h3><div class="opts c2">${[["pol","Issiq pol"],["radiator","Radiator"],["ikkalasi","Ikkalasi"],["yoq","Isitilmaydi"]].map(([k,t])=>opt(r.heat===k,`App.rf('heat','${k}')`,t,"","c")).join("")}</div>
     ${r.heat==="pol"||r.heat==="ikkalasi"?`<label class="f">Pol qoplamasi</label><div class="opts c3">${[["kafel","Kafel"],["laminat","Laminat"],["linoleum","Linoleum"]].map(([k,t])=>opt(r.cover===k,`App.rf('cover','${k}')`,t,"","c")).join("")}</div><label class="f">Quvur qadami</label><div class="opts c3">${[10,15,20].map(v=>opt(num(r.step)===v,`App.rf('step',${v})`,v+" sm","","c")).join("")}</div>`:""}</div>`;
   h+=`<div class="card"><h3>Sanitariya asboblari</h3>${Object.entries(FX).map(([k,v])=>stepper(v[0],num((r.fx||{})[k]),`App.fx('${k}',-1)`,`App.fx('${k}',1)`)).join("")}</div>`;
@@ -778,6 +783,13 @@ const R=()=>cur().rooms.find(x=>x.id===V.room);
 App.rf=(k,v)=>{const r=R(),live=["a","b","c","d","diag","win","h"].includes(k);r[k]=["name","heat","cover","att","side"].includes(k)||typeof v==="boolean"?v:num(v);if(k==="att"||k==="side")r.fix=false;if(k==="floor"){r.att="";r.fix=false;r.ground=v===0;r.top=v===cur().floors-1;}if(k==="name"||live)liveRoom();else{V.keepScroll=true;render();}};
 App.rtype=k=>{const r=R(),T=RT[k],auto=Object.values(RT).some(v=>r.name===v.n)||r.name==="Yangi xona";r.type=k;r.step=T.step;r.heat=T.heat;r.cover=T.cover;r.fx=Object.assign({},T.fx);if(k!=="yotoq"){r.beds1=0;r.beds2=0;}if(auto)r.name=T.n;V.keepScroll=true;render();};
 App.fx=(k,d)=>{const r=R();r.fx=r.fx||{};r.fx[k]=Math.max(0,num(r.fx[k])+d);V.keepScroll=true;render();};
+App.wallOpen=i=>{const r=R(),x=H.rs.find(y=>y.r===r);r.open=r.open||[false,false,false,false];const v=!r.open[i];r.open[i]=v;if(!v&&r.rail)r.rail[i]=false;
+  /* qo'shni xonaning shu devorga tegib turgan devori ham */
+  if(x&&x.P){const A=x.P.map(p=>add(p,x.pos)),a=A[i],b=A[(i+1)%4],d=nrm(sub(b,a));
+    H.rs.forEach(y=>{if(y===x||!y.P||y.f!==x.f)return;const B=y.P.map(p=>add(p,y.pos));for(let j=0;j<4;j++){const c=B[j],e=B[(j+1)%4],d2=nrm(sub(e,c));if(Math.abs(d[0]*d2[1]-d[1]*d2[0])>0.05)continue;
+      const off=Math.abs((c[0]-a[0])*d[1]-(c[1]-a[1])*d[0]);if(off>0.3)continue;const t1=dot(sub(c,a),d),t2=dot(sub(e,a),d),L=len(sub(b,a)),ov=Math.min(L,Math.max(t1,t2))-Math.max(0,Math.min(t1,t2));if(ov<0.3)continue;
+      y.r.open=y.r.open||[false,false,false,false];y.r.open[j]=v;if(!v&&y.r.rail)y.r.rail[j]=false;}});}
+  V.keepScroll=true;render();};
 App.toggleExt=i=>{const r=R();r.ext[i]=!r.ext[i];liveRoom();};
 App.tab=t=>{V.tab=t;render();};
 App.variant=k=>{cur().variant=k;V.keepScroll=true;render();};
